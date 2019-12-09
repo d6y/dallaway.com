@@ -1,0 +1,600 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>DB Testing</TITLE>
+		<META name="keywords" content="unit, testing, database, sql, junit">
+		<META name="description" content="Notes on unit testing database functionality">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+
+<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+<TR><!-- TOP BAR WITH SEARCH -->
+	<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="index.html">Writing</a> - DB Testing</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+</TR>
+</TABLE>
+
+
+
+<h1>Unit testing database code</h1>
+
+
+<p>
+These are my notes on how I've gone about unit testing database functionality.
+The examples are in Java, but I think the ideas are applicable to a variety
+of programming environments. I'm looking for better solutions.
+</p>
+
+<p>
+The problem is this: you have a SQL database, some stored procedures, and a layer
+of code sitting between your application and the database.  How can you put tests in
+place to make sure your code really is reading and writing
+the right data from the database?
+</p>
+
+<p><a href=" http://home.gigigaga.com/arecagiga/Test/unit_testing_database_code.htm"><img border="0" src="tc.gif" width="" height=""></a></p>
+
+<table border="0">
+<tr>
+<td valign="top">
+<ul>
+<li> <a href="#why">Why bother</a>
+<li> <a href="#what">What kinds of tests are we talking about?</a>
+<li> <a href="#bust">Approaches that don't work</a>
+<li> <a href="#four">You need four databases</a>
+<li> <a href="#right">Test against the right database</a>
+<li> <a href="#conc">Conclusions</a>
+<li> <a href="#update">A view from 2006</a>
+<li> <a href="#comments">Comments</a>
+<li> <a href="#dates">A note on testing dates</a>
+<li> <a href="#resources">Resources</a>
+</ul>
+</td>
+<td width="50px">&nbsp;</td>
+<td valign="top" align="middle">
+<script type="text/javascript"><!--
+google_ad_client = "pub-7754260355934493";
+google_ad_width = 250;
+google_ad_height = 250;
+google_ad_format = "250x250_as";
+google_ad_channel ="3686166658";
+google_color_border = "CCCCCC";
+google_color_bg = "FFFFFF";
+google_color_link = "000000";
+google_color_url = "666666";
+google_color_text = "333333";
+//--></script>
+<script type="text/javascript"
+  src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</td>
+</tr>
+</table>
+
+<p>Original: April/May 2001.  This version: $Revision: 1.10 $ $Date: 2006/08/14 03:37:08 $</p>
+
+<p>
+<b>Updated:</b>
+<ul>
+<li> 2006-08-15: Cleaned up links, added a view from 2006.
+<li> 2004-10-20: Added note on how DB testing has moved on.
+<li> 2003-06-24: Updated links (thanks Ted).
+<li> 2003-01-06: Added link to Martin Fowler and Pramod Sadalage's  "Evolutionary Database Design" paper.
+<li> 2002-02-08: Added link to Areca Chen's traditional Chinese translation.
+<li> 2001-09-26: In resources, add link to Mock testing paper.
+<li> 2001-07-31: Started to <a href="junit-yahoo-db.html">collect related items</a> from the JUnit Yahoo! groups mailing list.
+<li> June 2001: Added a discussion board.
+
+</ul>
+</p>
+
+<hr />
+
+<h2><a name="#why"></a>Why bother?</h2>
+
+<p>
+I'm guessing some, if not a lot, of database development goes like this:  set up database,
+write code to access database, run code, do a <code>SELECT</code> to see if the
+records showed up in the database.  They did? Good, then we're done.
+</p>
+
+<p>
+The problem with <b>visual inspection</b> is this: you don't do it often, and
+you don't check everything every time.  It's possible that when you make
+changes to a system, maybe months later, you break something and
+some data will go missing.  As a coder you may
+not spend much time checking the data itself, so it may take a
+while for this mistake to surface.
+I've worked on a web project
+where a mandatory field on a registration form was not being
+inserted into a database for the best part of a year.
+Although marketing had protested
+that they <i>needed</i> this information, the problem wasn't spotted because
+the data was never ever looked at it (but don't get me started on <i>that</i>).
+</p>
+
+<p>
+Automated tests &mdash; painless tests that run often and test lots &mdash;
+reduce the chances of your data is going missing.  I find they make
+it easier for me to sleep at night. (Tests have other positive
+features: they're good examples of how to use
+code, they act as documentation, they make other people's code
+less scary when you need to change it, they reduce debugging time).
+</p>
+
+<h2><a name="#what"></a>What kinds of tests are we talking about?</h2>
+
+<p>
+Consider a simple user database, with a email address and a flag indicating if mail to the
+address has bounced or not.  Your database layer might consist of methods for
+<code>insert</code>, <code>update</code>, <code>delete</code>, and <code>find</code>.
+</p>
+
+<p>
+The <code>insert</code> method would call a stored procedure to write the address and field to the database.  With much
+simplification and omission the code might look like this:
+<pre class="example-code">
+public class UserDatabase
+{
+  ...
+  public void insert(User user)
+  {
+    PreparedStatement ps = connection.prepareCall("{ call User_insert(?,?) }");
+    ps.setString(1, user.getEmail());
+    ps.setString(2, user.isBad());  // In real life, this would be a boolean.
+    ps.executeUpdate();
+    ps.close();
+  }
+  ...
+}
+</pre>
+</p>
+
+<p>
+The kind of testing code I'm thinking of would look something like this:
+<pre class="example-code">
+public class TestUserDatabase extends TestCase
+{
+  ...
+  public void testInsert()
+  {
+    // Insert a test user:
+    User user = new User("some@email.address");
+    UserDatabase database = new UserDatabase();
+    database.insert(user);
+
+    // Make sure the data really got there:
+    User db_user = database.find("some@email.address");
+    assertTrue("Expected non-null result", db_user != null);
+    assertEquals("Wrong email", "some@email.address", db_user.getEmail());
+    assertEquals("Wrong bad flag", false, db_user.isBad());
+  }
+  ...
+}
+</pre>
+... only you'd have more tests, probably.  (And take care with some tests, like tests on <a href="#dates">dates</a>).
+</p>
+
+<p>
+The <code>assertTrue</code> and <code>assertEquals</code> methods test that a condition is true, and if not
+the test fails in some way giving a diagnostic message.
+The idea is that the test is
+automatically run via a test framework, and a clear
+indication of success or failure
+is flagged.
+This is based
+on <a href="#junit">JUnit (see resources, below)</a>, a testing framework for Java.
+The framework is available
+for other languages, including C, C++, Perl, Python, .NET (all languages),
+PL/SQL, Eiffel, Delphi, VB... <a href="#starunit">(see resources, below)</a>.
+</p>
+
+<p>
+The next question becomes: we have tests, but how do we manage the testing data in the database
+so that it doesn't "mess up" live data?
+</p>
+
+<h2><a name="#bust"></a>Approaches that don't work</h2>
+
+<p>
+Before I start, I should point out that I expect you to have a development database.
+You wouldn't want to do anything I've noted in here on a production database.
+<p>
+<p>
+The first approach I tried was to manually insert some testing data in a copy of the production database.  These
+would be records with known values, such as "testuser01@test.testing".
+If you were testing some searching functionality, you'd know that
+there were, say, five users in the database "@test.testing".
+</p>
+<p>
+For inserted test records, as in the example above, the test
+itself would have to maintain the state of the database.  I.e.,
+the test would have to be sure to clean up after itself, be careful not to deleted required records,
+so the database was in a good state once the test had finished.
+</p>
+
+<p>
+This approach troubles me for the following reasons:
+<ul>
+	<li> You have to synchronize your test records with other developers  &mdash; assuming
+		they also have their own test database.
+	<li> Having "magic values" in the database (special email addresses, reserved id prefixes)
+	     doesn't seem right.
+	<li> You're stuck in the case where you can't reserve magic values to
+		mark data as test data, such as a record made up of integers and all
+		 values are plausible.
+	<li> Your testing is limited to records within the values you have reserved &mdash; at best
+	this means you have to select your magic values very carefully.
+	<li> If the data is time sensitive it becomes hard to maintain the
+	test cases.  An example: a database holds product offers which
+	are valid only between specific dates.
+</ul>
+</p>
+
+<p>
+Some fixes I've tried: add a "is_test" field to records, as a way to flag
+test records.  This avoids the "magic values" problem.  The down side is that
+your test code needs to operate only on records where the is_test field is set, whereas your
+production code needs to work with records where is_test is false.
+If you have differences at that level, you're not really testing
+the same code.
+</p>
+
+
+<h2><a name="four"></a>You need four databases</h2>
+
+<p>
+Some thoughts: A good test set is self sufficient and creates all the data it needs.  Testing can be simplified if you
+can get the database in a known state before a test is run.  One way to do this is to have a separate unit test database
+which is under the control of the test cases: the test cases clean out the database before starting
+any tests.
+</p>
+
+
+<p>
+In code, you can do this by having a <code>dbSetUp</code> method which might look like this:
+
+<pre class="example-code">
+  ...
+  public void dbSetUp()
+  {
+    // Put the database in a known state:
+    // (stored procedures would probably be better here)
+    helper.exec("DELETE FROM SomeSideTable");
+    helper.exec("DELETE FROM User");
+
+    // Insert some commonly-used test cases:
+    ...
+  }
+</pre>
+</p>
+
+
+<p>
+Any database test would call <code>dbSetUp()</code> before anything else, which would put the database in a known
+state (mostly empty).  This gives you the following advantages:
+<ul>
+<li> All test data is communicated to other developers in the code: there's no problems syncronizing external test data.
+<li> No magic values.
+<li> Simple, easy to understand approach.
+<li> Deleting and inserting data for every test may seem like a big time over head, but as tests use relatively little data,
+I find this approach to be quick enough (especailly if you're running against a local test database).
+
+</ul>
+</p>
+
+
+<p>
+The down-side is that you need more than one database &mdash; but remember, they can all run on one server if necessary.
+The way I'm testing now needs four databases (well, two at a pinch):
+<ol>
+	<li> The <b>production database</b>.  Live data.  No testing on this database.
+	<li> Your <b>local development database</b>, which is where most of the testing is carried out.
+	<li> A <b>populated development database</b>, possibly shared by all developers so you can run your
+	application and see it work with realistic amounts of data, rather than the hand full
+	of records you have in your test database.  You may not strictly need this, but it's
+	reassuring to see your app work with lots of data (i.e., a copy of the production database's data).
+	<li> A <b>deployment database</b>, or integration database, where the tests are run prior
+	to deployment to make sure any local database changes have been applied. If you're working alone,
+	you may be able to live without this one, but you'll have to be sure any database structure
+	or stored procedure changes have been made to the production database before you go live
+	with your code.
+</ol>
+</p>
+
+<p>
+With multiple database you have to make sure you keep the structure of the
+databases in sync: if you change a table definition or a stored procedure
+on your test machine, you'll have to remember to make those changes on the live server.
+The deployment database should act as a reminder to make those changes.
+Also I find source control systems help here if the commit comments
+are emailed to all developers automatically.  <a href="#cvs">CVS (see resources, below)</a> does this, and I expect others do too.
+</p>
+
+<h2><a name="right"></a>Test against the right database</h2>
+
+
+<p>
+In this environment you have to be sure you're connecting to the right database.  Running the test
+set against a production database will delete all your data. This scares the hell out of me.
+</p>
+<p>
+There are ways to protect against this.
+For example, it's not uncommon to have database connection settings stored in a initialization file
+and you can use this to state which database is the test database.  You might use one
+initialization file for testing (pointing to a local database), and another for production work
+(pointing to a live database).
+</p>
+
+<p>
+In Java, an initialization file might look like this:
+<pre class="example-code">
+  myapp.db.url=jdbc:mysql://127.0.0.1/mydatabase
+</pre>
+This is the connection string for connecting to a database. You can also add a second connection
+string to identify the test database:
+<pre class="example-code">
+  myapp.db.url=jdbc:mysql://127.0.0.1/mydatabase
+  myapp.db.testurl=jdbc:mysql://127.0.0.1/my_test_database
+</pre>
+In test code you can add a check to make sure you'll only run when you're connecting
+to a test database:
+<pre class="example-code">
+  public void dbSetUp()
+  {
+     String test_db = InitProperties.get("myapp.db.testurl");
+     String db = InitProperties.get("myapp.db.url");
+
+     if (test_db == null)
+       abort("No test database configured");
+
+     if (test_db.equals(db))
+     {
+        // All is well: the database we're connecting to is the
+        // same as the database identified as "for testing"
+     }
+     else
+     {
+        abort("Will not run tests against a non-test database");
+     }
+  }
+</pre>
+
+Another trick: if you have a local testing database, the tests can check the IP or hostname
+you've been asked to run against.  If it's not localhost / 127.0.0.1 there's a risk you're
+running against a live database.
+
+</p>
+
+
+<h2><a name="conc"></a>Conclusions</h2>
+
+<p>
+In these notes I've tried to say:
+<ul>
+<li> unit testing of database code is worth doing;
+<li> you can do the testing without too much pain if you're willing to give your test suit a database to itself.
+</ul>
+</p>
+
+<p>
+There are other ways to approach this problem.
+I'm not yet confident enough to trust myself with <a href="#spoof">mock objects (see resources, below)</a>.
+As I understand mock objects, you simulate a layer of a system (in this case, the RDBMS), so that your
+mock database always returns just what you expect.   I like the sounds of that: it encourages you
+to layer your testing, perhaps by having a SQL-level set of tests, and then having a Java-level set which work
+on mock ResultSet objects.
+</p>
+
+<p>My concern is only that some actions can lead to changes in a two or
+more tables, and at this point the mock objects/simulation may become a pain to maintain and implement.
+And of course, I'll need to find a good way to test the SQL-level of the database: remember, I want to be sure
+data really is making it into the database properly.
+</p>
+
+<div style="margin: 5px; padding: 5px; background-color: #eeeeee">
+<h2><a name="update"></a>A view from 2006</h2>
+
+<p>
+The above article was written in 2001.  Five years later I'm surprised that
+ I still find the spirit of the article useful today.  
+ Of course, many of the details are different.
+</p>
+
+
+<p>
+The main thing that has changed for me is the availability of strong 
+<a href="http://blog.spiralarm.com/richard/2005/04/persistence-options.html">persistence frameworks</a>.  
+These remove a good chunk of risk with respect to the SQL that is executed 
+against a database.  As a consequence, testing becomes easier.
+</p>
+
+<p>
+The unit tests I write today do still do things such as confirm the right set of results are 
+returned in the right order, but the management of these tests has become easier. 
+ In particular as persistence frameworks are abstracted form any particular RDBMS, 
+ it becomes feasible  to substitute alternatives for unit testing. \
+  There's a great article by Alex Vollmer (see <a href="#in_memory">resources</a>, below) that 
+  shows how to use an in-memory database with Hibernate.
+</p>
+
+<p>
+I still feel it's important to test that data goes through persistence as it is 
+expected it to. I recently had a situation where a test was failing because a 
+persistence annotation was accidently removed from a class.  The persistence 
+layer was doing exactly what it was told to do, but the result was an error 
+in the application.  Catching those situations is what makes unit testing addictive.
+</p>
+
+
+<p>
+Having said that, there's not a great benefit in writing tests that effectively 
+just test the framework you're using: you have to trust the underlying technologies 
+to do what they say they do.  There's a fine line there, and the rule of thumb 
+I follow is that if I've written or touched the code, it needs to be tested.
+</p>
+
+<p>
+I can report that, five years on, having tests that go through the persistence
+ layer can give you enormous confidence in the code you're writing. 
+</p>
+</div>
+
+<h2><a name="comments"></a>Comments</h2>
+
+<p>
+I'm always looking for better ways to test database code.  If you have any
+ideas, or any comments, please do <a href="/contact">email me</a>.
+</p>
+
+
+<h2><a name="dates"></a>A note on testing dates</h2>
+
+<p>
+If you're storing date information you probably want to make sure that you're storing the right dates.  Be aware of some issues.</p>
+
+<p>First, ask yourself who is creating the date?  If it's your code, that's fine because you should be able to compare
+the date you created to the date you get back when you go looking into the database.  If the database is creating
+the date, perhaps as a default column value, then you may have some problems.  For example, are you sure the timezone
+for your code is the same as the timezone for the database?  It's not unheard of to have databases running in GMT/UTC.
+Are you sure the clock on the machine you're running on will be set to the same time as the the clock on the database?
+If not, you're going to have some margin of error when comparing times.</p>
+
+<p>
+If you run into these situations there are a few things you can do:
+<ul>
+<li> If you know the timezone that will be used, cast all dates into a single timezone before testing.  This will
+clear up any "offset by hours" problems.
+<li> Allow a margin of error in comparing dates: say a few minutes, hours or months either side.  Sounds lame, but
+at least it'll catch errors where you're picking up null or 1970-01-01 dates.
+</ul>
+</p>
+
+
+
+
+
+
+
+<h2><a name="resources">Resources</a></h2>
+
+<ul>
+
+<li class="resource"> <a name="#yahoo"></a>
+   <a href="junit-yahoo-db.html">Related threads from the JUnit mailing list</a>
+   <br>
+	The <a href="http://groups.yahoo.com/group/junit">JUnit mailing list at Yahoo!</a> occasionally
+	carries discussions on database unit testing. I've collected together some of the
+	threads that I've found useful.
+
+</li>
+
+<li class="resource"> <a name="#evodesign"></a>
+   <a href="http://martinfowler.com/articles/evodb.html">Evolutionary Database Design</a>
+   <br>
+	Martin Fowler and Pramod Sadalage's paper on "techniques that allow a database design to evolve as an application develops".  There's also a <a href="http://groups.yahoo.com/group/agileDatabases/">Yahoo! agile database group</a>.
+
+</li>
+
+
+<li class="resource"> <a name="#junit"></a>
+	<a href="http://www.junit.org/">junit.org: Testing Resources for Extreme Programming</a>
+	<br />The home of the Java JUnit software.
+</li>
+
+<li class="resource"> <a name="starunit"></a>
+	<a href="http://www.xprogramming.com/software.htm">Testing Framework software for download</a>
+	<br />Covering many programming languages.
+</li>
+
+<li class="resource">
+	<a href="http://www.extremeprogramming.org/change.html">A Change in the Way We Program</a>
+	<br />
+	Unit testing is one part of "extreme programming".
+	You can find lots about XP, starting with the Change in the Way We Program article, at
+	extremeprogramming.org and also at <a href="http://www.xprogramming.com">xprogramming.com</a>
+</li>
+
+<li class="resource">
+	<a href="http://jxunit.sourceforge.net/">JXUnit: Building Suites of Test Data with XML</a>
+	<br />
+	A sourceforge project that builds on JUnit to store test data in XML files, keeping
+	the data separate from the testing code.  Sounds kind of like a good idea, but I've not
+	tried this yet.
+</li>
+
+<li class="resource">
+	<a href="http://jakarta.apache.org/cactus">Cactus</a>
+	<br />
+	An Apache Jakarta project, extending JUnit to test a MVC architecuture... using servlets, I think.
+	I need to look at this project more...
+</li>
+
+<li class="resource"> <a name="spoof"></a>
+	<a href="http://www.objectmentor.com/resources/articles/Working_Backwards.pdf">Working backwards (PDF)</a>
+	<br />
+	James Newkirk, Robert C. Martin.  A draft of chapter 10 (pp. 91-106) from <a href="http://www.amazon.co.uk/exec/obidos/ASIN/0201709376/richarddallaway">Extreme Programming in Practice (Amazon UK)</a>.
+	Discusses the use of mock objets (spoofing) to test certain database functionality.<br/>
+	See also: <a href="http://www.sidewize.com/company/mockobjects.pdf">Endo-Testing: Unit Testing with Mock Objects</a> (PDF) by Tim Mackinnon, Steve Freeman and Philip Craig.
+</li>
+
+
+
+<li class="resource">
+	<a href="http://www.dallaway.com/reading/archive/extremeprog.xml">Extreme Programming Explained</a> (book)
+	<br/>The introduction to XP.
+</li>
+
+
+<li class="resource"> <a name="cvs"></a>
+	<a href="http://www.cvshome.org/">CVS: Concurrent Versions System</a>
+	<br />
+	Source control.
+
+</li>
+
+<li class="resource">
+	<a href="http://developer.java.sun.com/developer/technicalArticles/J2EE/testinfect/">Test Infect Your Enterprise JavaBeans</a>
+	<br />
+	The issues when running tests inside an application server.
+</li>
+
+
+<li class="resource"><a name="jdbcmock"></a>
+	<a href="http://www.mockobjects.com/wiki/MocksObjectsPaper">Developing JDBC applications test-first
+</a>
+	<br />
+	Steve Freeman's paper on how to test JDBC-based applications without a database.  See also the follow-ups in
+	the messages collected from the <a href="junit-yahoo-db.html">JUnit mailing list</a>.
+</li>
+
+<li class="resource"><a name="made_easy"></a>
+	<a href="http://www.oreillynet.com/onjava/blog/2005/10/dbunit_made_easy.html">DBUnit Made Easy
+</a>
+	<br />
+	A write up from  Bill Siggelkow on getting into the  <a href="http://dbunit.sourceforge.net/">DB Unit</a> framework.
+</li>
+
+
+<li class="resource"><a name="in_memory"></a>
+	<a href="http://www.theserverside.com/tt/articles/article.tss?l=UnitTesting">Unit-Testing Hibernate with HSQLDB
+</a>
+	<br />
+	Unit testing database access by running an in-memory database, by Alex Vollmer.
+</li>
+
+
+
+</ul>
+
+<!--#include virtual="/footer.html" -->
+
+
+
+</BODY>
+</HTML>

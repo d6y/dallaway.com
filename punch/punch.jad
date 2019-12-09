@@ -1,0 +1,10 @@
+MIDlet-Name: Punch
+MIDlet-Version: 1.0
+MIDlet-Vendor: dallaway.com
+MIDlet-Info-URL: http://punch.sourceforge.net/
+MIDlet-Description: Timesheet punch clock
+MicroEdition-Profile: MIDP-1.0
+MicroEdition-Configuration: CLDC-1.0
+MIDlet-1: Punch, /punch.png, net.sourceforge.punch.midp.PunchClockMIDLet
+MIDlet-Jar-URL: http://dallaway.com/punch/punch.jar
+MIDlet-Jar-Size: 10274

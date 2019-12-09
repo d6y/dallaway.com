@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>Vaio Z600HEK</TITLE>
+		<META name="keywords" content="Sony, Vaio, Viao, HEK, Z600, Z600HEK, PCG-Z600, PCG-Z600HEK, Linux, Advanced Server">
+		<META name="description" content="Installing Windows 2000 Advanced Server and RedHat Linux 7.3 on Sony Vaio PCG-Z600HEK">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="index.html">Writing</a> - Vaio PCG-Z600HEK</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+
+<h1>Notes on upgrading a Vaio Z600HEK to Windows 2000 Advanced Server and RedHat Linux 7.3</h1>
+
+<p>
+My notes from upgrading a Sony Vaio PCG-Z600HEK from Windows 2000 Professional
+to Windows 2000 Advanced Server and also installing RedHat Linux 7.3 on this
+notebook.</p>
+
+<table>
+<tr>
+<td valign="top">
+<ol>
+<li> <a href="#intro">Introduction</a>
+<li> <a href="#plan">My Plan</a>
+<li> <a href="#windows">Windows 2000 Advanced Server</a>
+<li> <a href="#linux">RedHat Linux 7.3</a>
+</ol>
+</td>
+<td width="50px">&nbsp;</td>
+<td valign="top" align="middle">
+<script type="text/javascript"><!--
+google_ad_client = "pub-7754260355934493";
+google_ad_width = 250;
+google_ad_height = 250;
+google_ad_format = "250x250_as";
+google_ad_channel ="3686166658";
+google_color_border = "CCCCCC";
+google_color_bg = "FFFFFF";
+google_color_link = "000000";
+google_color_url = "666666";
+google_color_text = "333333";
+//--></script>
+<script type="text/javascript"
+  src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</td>
+</tr>
+</table>
+
+<p>This version: $Revision: 1.3 $ $Date: 2003/08/04 08:13:09 $</p>
+
+<hr>
+
+<h2><a name="intro">Introduction</h2>
+
+<p>The Vaio I purchased comes with Windows 2000 Professional, and I needed
+to update this for development work to run both RedHat Linux 7.1 and
+also Windows 2000 Advanced Server.</p>
+
+<p>This brief note outlines what I did, and what gotchas got me on the way.</p>
+
+<p>
+Rant: the Vaio is an expensive but good product.  However, just trying
+to buy one from Sony direct (Europe) was a pain in the arse.  To cut
+a long story short.. if you can find an equivalent non-Sony product or buy it
+from a store, I recommend you do that.
+</p>
+
+<h2><a name="plan">My plan</a></h2>
+
+<p>My plan may differ from yours, but here's what I wanted to do:
+
+<ol>
+ <li> Repartition the disks to make space for Linux and to use NTFS.
+ <li> Wipe out all traces of Windows 2000 Professional, and replace it
+      with advanced server.
+ <li> Install Grub to boot between operating systems.
+</ol>
+
+</p>
+
+
+<p>To set up the partitions I used PowerQuest's PartionMagic 6.0.  Note that
+ PartitionMagic does not work on Windows Server editions, so this
+was a one-off use of the product.  Perhaps I should have created a small
+Windows 2000 Professional or Windows 98 partition so I could use
+PartitionMagic again... but I didn't.  Given what I know now, I think
+I could have gotten away with using something like fdisk to hack away
+at the partitions.</p>
+
+<p>
+The Vaio shipped with two FAT32 paritions.  I resized the first partition
+to give myself a Linux swap and Linux / partition, and then converted
+the second Fat32 partition into NTFS.  PartitionMagic did this
+without a problem.
+</p>
+
+
+<p>
+For installation of both Windows 2000 Advanced Server and RedHat Linux, I
+plugged all the peripherals into the notebook in the hope that
+the OSs would automatically detect everything.</p>
+
+<h2><a name="windows"Windows 2000 Advanced Server</a></h2>
+
+<p>Advanced server will not automagically upgrade 2000 professional to a server
+edition, so you have to decide to either install 2000 Server alongside Professional or
+delete professional.  I decided to get rid of professional.</p>
+
+<p>In 2000 Professional, I tried to run the install program from the Advanced
+CD, but early on during the install Windows decided it couldn't see the CD
+anymore.  In the end I started the install by rebooting with the Advanced
+Server CD in the drive.</p>
+
+<p>The Advanced server set up program runs for a bit, copying files from the CD,
+and then asks you what partition you want to install on.  At this point
+I deleted my fat32 ("C:\") partition, then recreated it for Advanced Server.
+This gets rid of Professional for good.</p>
+
+<p>
+The install then chunders on, and nothing of any great interest happens.  Except,
+select "Alps" pointing device as the mouse.</p>
+
+<p>After 2000 starts up, it's time to re-install all the Sony software.  This is
+all on disk 3 of the Product Recovery CD ROM.</p>
+
+<p>I started dipping into the Apps folder of this CD running every setup.exe I could
+find.  Mostly this worked, but for some applications I was getting a SxBios.dll
+error: SonyNC.sys could not be detected.</p>
+
+<p>To fix this I tried installing the .inf files in the Drivers folder of the
+CD, but this seemed to do nothing.  In the end I went into Control
+Panels/Add Remove Hardware (yeah, <i>Hardware</i>) and selected "Add/troubleshoot" a device.
+This found three or four "unknown" bits of hardware.  If you then select them in turn
+and let Windows search the CD for a driver, it will find drivers for the Modem,
+"Sony Programmable IO", something about the memory stick and "Sony Notebook Control
+Device".  You'll probably have to reboot a couple of times, but once these
+"hardware devices" are set up the "SonyNC.sys" errors go away.</p>
+
+<p>After that's sorted, I just carried on installing everything in the Apps
+folder of the recovery CD, and the machine is all well and running Advacned
+Server.</p>
+
+<p>
+The only thing I've noticed not working is one of the suppend modes: FN+Esc.  This suspends the
+machine but when you restart it, the screen doesn't wake up.  The two times I've tried this
+I've had to take out the battery to get the machine back. (I've since learned that you can shutdown the box when it's in this state by just holding down the power slider for about 10 seconds).
+</p>
+
+
+<h2><a name="linux">RedHat Linux 7.3</a></h2>
+
+<p>The basic install works: insert the RedHat CD and reboot, select graphical
+install and off you go.  I went for the Laptop install, with Grub on the master
+boot record, and it all hapened as you'd expect.</p>
+
+<p> The CD is detected and the network
+card is detected. My D-Link 802.11b wireless network card works fine once I installed the <a href="http://prism2.unixguru.raleigh.nc.us/">wlan-ng drivers</a>.
+
+<p>The USB mouse I have is detected and works.  However, I can't figure out how to get the mouse and the pointing device working at the same time, though.</p>
+
+<p>The built-in modem is a software modem (WinModem) which does seem to be supported.  I've not tried it, though.</p>
+
+<p>The memory stick works too.  You just need to insert the stick and mount the filesystem: <tt>mount -t vfat /dev/sda1/ /mnt/memorystick</tt></p>
+
+<p>I can sync my Palm Pilot down the serial port without problem using JPilot.</p>
+
+<p>The power management is "non standard".  The <a href="http://vaio.mswinxp.net/">Vaio Daemon project</a> is doing something about this.</p>
+
+<p>I've not tried the little web cam under Linux yet, but I will do.</p>
+
+<p>I'll add more to this document as I try out more of the notebook in Linux.
+<a href="/contact">Hassle me</a> if you feel like it.</p>
+
+<!--#include virtual="/footer.html" -->
+
+</body>
+</html>
+

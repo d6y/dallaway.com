@@ -1,0 +1,535 @@
+package com.dallaway.jsptest;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+
+/**
+ * Test suite for unit testing the JSP Test classes.
+ *
+ * This is a test of the testing classes.  You probably don't
+ * want to even look at this unless you plan to change the code.
+ *
+ * <p>
+ * If you do want to run this, you will need to be running a local
+ * webserver with /test/ mapped to the wwwtest/test folder of this project
+ * (or copy the files into your server root or by deploying test.war). 
+ * 
+ * You can change the host and port settings by modifying the TEST_SERVER string
+ * to by supplying -Durl=http://someplace:else/test to your JVM note: no trailing
+ * space).  
+ * 
+ * If you want you can set -Durl=http://www.dallaway.com/jsptest/test to run
+ * the tests from the JSPTest web site.  You need to be connected to the
+ * internet anyway, as one of the
+ * tests makes a request for a web page running on port 80.
+ * <p>
+ * Run this test with:
+ * <code>java -cp jsptest.jar;/path/to/junit.jar;lib/jsse.jar;lib/jcert.jar;lib/jnet.jar com.dallaway.jsptest.JSPTestTest</code>
+ * 
+ * You can get
+ * JUnit from http://xprogramming.com/software.htm
+ * This version of JSPTest required junit version 3.7 (or later).
+ *
+ * <p>
+ * The three methods that use the JSP TEST classes are:
+ * testSimpleRequest, testSimpleJSPRequest and testJSPWithParam.
+ *
+ * @author  $Author: richard $
+ * @version $Revision: 1.2 $  $Date: 2002/12/30 18:24:09 $
+ */
+public class JSPTestTest extends TestCase
+{
+
+  /** The URL hit to request the test files used in
+   * this test class.  Map /test at this address to the
+   * wwwtest folder of this project.
+   */
+  private static String testServer = "http://127.0.0.1:8080/test";
+
+
+  /** 
+   * @see TestCase#TestCase(java.lang.String)
+   */
+  public JSPTestTest(String name)
+  {
+    super(name);
+    String base = System.getProperty("url");
+    if (base != null)
+    {
+        testServer = base;   
+    }
+
+  }
+
+  /**
+   * Defines the collection of all tests to run.  In this case
+   * we go for all the tests in this class (all the methods that
+   * begin with the four characters "test").
+   * @return The tests to run.
+   */
+  public static Test suite()
+  {
+    return new TestSuite(JSPTestTest.class);
+  }
+
+
+  /**
+   * Run all the tests using text output.
+   * @param args Ignored.
+   */
+  public static void main(String args[])
+  {
+    String base = System.getProperty("url");
+    if (base != null)
+    {
+    	testServer = base;   
+    }
+      
+    System.out.println("Testing with "+testServer);  
+      
+    junit.textui.TestRunner.run(suite());
+  }
+
+
+  // ---------- START OF TESTS ----------
+
+
+  /**
+   * Test the parsing of the Set-Cookie string.
+   */
+  public void testCookieConstructionBySetLine()
+  {
+    Cookie c = new Cookie("testarg=test value; path=/");
+    assertEquals("Name mismatch", "testarg", c.getName());
+    assertEquals("Value mismatch", "test value", c.getValue());
+  }
+
+
+  /**
+   * Test creation of a cookie via a (name,value) pair.
+   */
+  public void testCookieConstruction()
+  {
+    Cookie c = new Cookie("testarg", "test value");
+    assertEquals("Name mismatch", "testarg", c.getName());
+    assertEquals("Value mismatch", "test value", c.getValue());
+  }
+
+
+  /**
+   * Test adding a cookie to the session.
+   * 
+   */
+  public void deprecatedTestCookieAdd()
+  {
+
+    Session s = new Session();
+
+    // Before we add a cookie we should have zero cookies.
+    Cookie[] zero = s.getCookies();
+    assertEquals("Expected no cookies", 0, zero.length);
+
+    // Add a cookie to the session
+    Cookie c = new Cookie("test1", "hello world");
+    s.addCookie(c);
+
+    // Check that the new cookie is in the session.
+    Cookie[] cookies = s.getCookies();
+    assertEquals("Cookie len", 1, cookies.length);
+    assertEquals("Cookie name", "test1", cookies[0].getName());
+    assertEquals("Cookie value", "hello world", cookies[0].getValue());
+
+    // Check the other way of looking up a value
+    assertEquals("Mismatch", "hello world", s.getCookieValue("test1"));
+  }
+
+  /**
+   * Test (1) adding two cookies to a session, and (2) adding a cookie with
+   * the same name as an existing cookie.
+   */
+  public void testAdd2Cookies()
+  {
+
+    Session s = new Session();
+
+    // Add 1...
+    Cookie c = new Cookie("test1", "hello world");
+    s.addCookie(c);
+
+    // Add another to make sure we have two cookies
+    Cookie c2 = new Cookie("test2", "bye");
+    s.addCookie(c2);
+    assertEquals("Length", 2, s.getCookies().length);
+
+    // If you add a cookie with the same name as another, you overwrite the previous cookie
+    Cookie c3 = new Cookie("test2", "something else");
+    s.addCookie(c3);
+    Cookie[] cookies = s.getCookies();
+    assertEquals("Length after third cookie", 2, cookies.length );
+    
+    assertEquals("Value", "something else", s.getCookieValue("test2"));
+  }
+
+
+  /**
+   * A simple http request.
+   */
+  public void testSimpleRequest()
+  {
+
+    Session session = new Session();
+    Response response = null;
+
+	String url = testServer+"/simple.html";
+
+    try
+    {
+      response = session.request(url);
+    }
+    catch (Exception x)
+    {
+      fail("Unable to get "+url+": "+x.getMessage());
+    }
+
+    // We expect the above request to return status code 200.
+	int status = response.getStatusCode();
+    assertEquals("Status", 200, status );
+    
+    // simple.html contains a comment telling us the name of the file.
+    assertTrue("Wrong filename", response.getBody().indexOf("filename=simple.html") != -1);
+
+
+  }
+
+
+  /**
+   * A simple http request for a JSP that will send back a cookie.
+   */
+  public void testSimpleJSPRequest()
+  {
+
+    Session s = new Session();
+    Response r = null;
+
+    try
+    {
+      r = s.request(testServer+"/simple.jsp");
+    }
+    catch (Exception x)
+    {
+      fail("Exception requesting HTTP: "+x.getMessage());
+    }
+
+    int status = r.getStatusCode();
+    assertEquals("Status", 200, status);
+    assertTrue("Wrong filename", r.getBody().indexOf("filename=simple.jsp") != -1);
+
+    // The cookie sent back from the JSP:
+    assertEquals("Cookie value", "test_value", s.getCookieValue("test_name"));
+
+  }
+
+  /**
+   * Test by requesting a JSP but passing a parameter as a GET.
+   */
+  public void testJSPWithParam()
+  {
+
+    Session s = new Session();
+    Response r = null;
+
+    try
+    {
+      r = s.request(testServer+"/echo.jsp?name=You");
+    }
+    catch (Exception x)
+    {
+      fail("Exception requesting HTTP: "+x.getMessage());
+    }
+
+    int status = r.getStatusCode();
+    assertEquals("Status", 200, status );
+    assertTrue("Expected echo.jsp", r.getBody().indexOf("filename=echo.jsp") != -1);
+
+    // The page should contain the string "Hello You" somewhere
+    assertTrue("Expected body to contain Hello You", r.getBody().indexOf("Hello You") != -1);
+
+    // Also, the comment at the start of the page should contain "NAME=You"
+    assertTrue("Expected to find NAME=You", r.getBody().indexOf("NAME=You") != -1);
+
+  }
+
+
+  /**
+   * Test the getBetween methods of request.
+   */
+  public void testGetBetween()
+  {
+
+    // Test string.  We'll extract all the animal= values
+    String testBody =
+      "This is a test string.  animal=[dog] animal=[cat] some stuff" +
+      "more stuff animal= and animal=[] and animal=[fish] and " +
+      "animal=[ and animal=[dog] again. bestanimal=[dog].";
+
+    // This is what we expect
+    String[] correct = {"dog", "cat", "", "fish", " and animal=[dog", "dog"};
+
+    // Run the method
+    Response r = new Response(testBody, null, null);
+    String[] a1 = r.getBetweens("animal=[", "]");
+
+    assertEquals("Array length", correct.length, a1.length);
+
+    // Check individual cell elements
+    for(int i=0; i<a1.length; i++)
+    {
+      assertEquals("Cell failed "+i,  correct[i], a1[i]);
+    }
+
+    String first = r.getBetween("animal=[", "]");
+    assertEquals("First match failed", correct[0], first);
+
+
+    // Now try something we don't expect to match
+
+    Response r2 = new Response("yada yada yada yada", null, null);
+    String[] a2 = r2.getBetweens("animal=[", "]");
+
+    assertEquals("Expected zero elements for a non-match", 0, a2.length);
+
+    assertTrue("First element of non match was not null", r2.getBetween("animal=[", "]") == null);
+
+  }
+
+
+
+  /**
+   * test of sending a cookie from Session to a JSP.
+   */
+  public void testCookieSend()
+  {
+
+    Session s = new Session();
+    Response r = null;
+
+    s.addCookie(new Cookie("test", "hello"));
+
+	String url = testServer + "/cookietest.jsp";
+
+    try
+    {
+      r = s.request(url);
+    }
+    catch (Exception x)
+    {
+      fail("Failed to fetch "+url+": "+x.getMessage());
+    }
+
+    int status = r.getStatusCode();
+    assertEquals("Status", 200, status );
+    assertTrue("Expected filename cookietest.jps in HTML", r.getBody().indexOf("filename=cookietest.jsp") != -1);
+
+    // The cookie sent back from the JSP should echo the value of the cookie
+    // "test" that we sent
+    String echoValue = s.getCookieValue("echo");
+
+
+    assertEquals("Cookie not echoed", "hello", echoValue);
+
+  }
+
+
+  /**
+   * Test of requesting a page without a port number in the URL.
+   */
+   public void testPort80()
+   {
+		String url = "http://www.dallaway.com/jsptest/port80.html";
+		try
+		{
+		  Session s = new Session();
+    	  Response r = s.request(url);
+    	  
+    	  // The page contains the words "This page exists".
+    	  assertTrue("Missing text on page.  Got \""+r.getBody()+"\". Please check "+url, r.getBody().indexOf("This page exists") != -1);
+		}
+		catch (MalformedURLException mux)
+		{
+		 	fail("Bad URL "+url+": "+ mux); 	  
+		}  
+		catch (IOException iox)
+		{
+			fail(iox.getMessage());    
+		}
+
+   }
+
+
+  
+
+  /**
+   * Test a HTTPs request.
+   * 
+   * The FTC.gov web site returns a page in which the title
+   * is "Fedpage staying availableeral Trade Commission - SSL".
+   * 
+   * We probably can't rely on this page staying the same for
+   * ever, but for now it's the only HTTPS test we have.
+   * 
+   * @throws IOException Thrown if there was a problem making the request.
+   */
+  public void testHttps() throws IOException
+  {
+  	String target = "https://www.ftc.gov/";	
+
+    Session s = new Session();
+    Response r = s.request(target);
+								    								    
+	assertTrue(r.getBody().indexOf("Federal Trade Commission - SSL") != -1);
+  } 
+
+
+	/** 
+	 * Test of the Request interface introduced in release 5.
+     * @throws IOException Thrown if there was a problem making the request.
+	 */
+	public void testGetRequest() throws IOException
+	{
+		String target = testServer + "/simple.html";
+		
+		Session session = new Session();
+		Request request = session.newGetRequest(target);
+		
+		Response response = session.send(request);
+
+	    // We expect the above request to return status code 200.
+		int status = response.getStatusCode();
+    	assertEquals("Status", 200, status );
+    
+    	// simple.html contains a comment telling us the name of the file.
+    	assertTrue("Wrong filename", response.getBody().indexOf("filename=simple.html") != -1);
+
+	}
+
+
+  /**
+   * Test by making a GET request including a param to a JSP.
+  * @throws IOException Thrown if there was a problem making the request.
+   */
+  public void testGetWithParam() throws IOException
+  {
+
+    Session s = new Session();
+	
+	Request request = s.newGetRequest( testServer + "/echo.jsp");
+	request.addParameter("name", "A N Other");
+    
+    Response r = s.send(request);
+   
+
+    int status = r.getStatusCode();
+    assertEquals("Status", 200, status );
+    assertTrue("Expected echo.jsp", r.getBody().indexOf("filename=echo.jsp") != -1);
+
+    // The page should contain the string "A N Other" somewhere
+    assertTrue("Expected body to contain Hello A N Other", r.getBody().indexOf("A N Other") != -1);
+
+    // Also, the comment at the start of the page should contain "NAME=A N Other"
+    assertTrue("Expected to find NAME=A N Other", r.getBody().indexOf("NAME=A N Other") != -1);
+
+  }
+
+
+
+  /**
+   * Test by making a POST to a JSP, but passing a parameter.
+   * @throws IOException Thrown if there was a problem making the request.
+   */
+  public void testPostWithParam() throws IOException
+  {
+
+    Session s = new Session();
+	
+	Request request = s.newPostRequest( testServer + "/echo.jsp");
+	request.addParameter("name", "A N Other");
+    
+    Response r = s.send(request);
+   
+
+    int status = r.getStatusCode();
+    assertEquals("Status", 200, status );
+    assertTrue("Expected echo.jsp", r.getBody().indexOf("filename=echo.jsp") != -1);
+
+    // A comment at the start of the page should contain "NAME=A N Other"
+    assertTrue("Expected to find NAME=A N Other", r.getBody().indexOf("NAME=A N Other") != -1);
+
+  }
+
+
+  /**
+   * Test of a POST with multiple parameters.
+   * @throws IOException Thrown if there was a problem making the request.
+   */
+  public void testPostWithMultiParams() throws IOException
+  {
+  	Session session = new Session();
+
+	// In this test we'll post these name=award pairs to the page
+	// and expect them echoed back to us.
+	String[] name = 
+	{
+		"Tristan Roddis and his polls", 
+		"The Webber", 
+		"The Webber"
+	};
+	
+	String[] award = 
+	{
+		"The Telemate Award for Most Inspiring Presence",
+		"The OK! Magazine Award for the BNM Celebrity of the Year",	
+		"The Sinclair C5 Award for Design, Style and Usability"
+	};
+	
+	// Build the request:  	
+  	Request request = session.newPostRequest(testServer + "/params.jsp");
+	for(int i=0; i<name.length; i++)
+	{
+		request.addParameter(name[i], award[i]);	
+	}  	
+
+	// Send the request:
+  	Response response = session.send(request);
+	
+	// The page should include a comment telling us it is params.jsp:
+	assertEquals("Wrong file", "params.jsp", response.getBetween("filename=[","]"));
+	
+	// Get all the lines that look like "Parameter [name=award]":
+	String[] params = response.getBetweens("Parameter [", "]");
+
+	assertEquals("Wrong number of params", name.length, params.length);
+	
+	// Make sure all the parameters are accounted for:
+	for(int i=0; i<name.length; i++)
+	{
+		String expected = name[i] + "=" + award[i];	
+		boolean found = false;
+		for(int j=0; j<params.length; j++)
+		{
+			if (params[j].equals(expected))
+			{
+				found = true;
+				break;
+			}		
+		}
+		assertTrue("Didn't find "+expected, found);
+	}
+	  		  	
+  }
+
+
+}

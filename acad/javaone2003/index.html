@@ -1,0 +1,215 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>Writing - JavaOne 2003</TITLE>
+		<META name="keywords" content="JavaOne 2003">
+		<META name="description" content="Notes on JavaOne 2003">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+<TR><!-- TOP BAR WITH SEARCH -->
+	<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../">Writing</a> - JavaOne 2003</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+</TR>
+</TABLE>
+
+
+<!-- Content -->
+<h1>JavaOne 2003, San Francisco</h1>
+
+
+<p>I attended the 2003 San Francisco JavaOne conference and made the following notes:</p>
+
+<table border="0" cellspacing="4" cellpadding="4" width="100%">
+
+<tr>
+<td valign="top" valign="left">
+<ul>
+
+<li> 
+JDK 1.4.2 is out, with 3000 bug fixes, big speed ups (possibly just for Intel), 
+Swing look and feel for Aqua, GTK and Windows XP.
+</li>
+
+<li>
+JDK 1.5 is due Summer 2004 and has a bunch of new languages features (more on
+this later).  The main focus is ease of development, monitoring and management.
+JDK 1.5.1 is due Spring 2005, and JDK 1.6 (Mustang) sometime in 2006.
+</li>
+
+<li>
+There's a big focus on pushing Java into the "corporate developer" space, currently occupied
+by the Microsoft ASP/VB folk and the world of PHP etc.  Much talk of growing the number of developers
+from three million to ten million. Hence, there's a lot of focus on "ease of
+development" and tools.  
+One colleague (you know who you are) dubbed it "dumbing down the platform".
+</li> 
+
+
+<li>
+In addition to the JDK 1.5 languages features of generics, enumerations, for
+iterator (<a href="http://java.sun.com/features/2003/05/bloch_qa.html">discussed here</a>) there
+was much cheering for autoboxing, printf and metadata.
+</li>
+
+
+<li>
+<a href="http://jcp.org/aboutJava/communityprocess/jsr/tiger/autoboxing.html">Autoboxing</a> (<a href="http://www.jcp.org/en/jsr/detail?id=201">JSR 201</a>) bothers me because I don't yet know how
+it's going to behave.  The idea is simple enough, in that you can now write <code>Integer x = 3</code>.
+rather than <code>Integer x = new Integer(3)</code>.  But I wonder what's going to happen when you try to add together Integer objects where one of them is null.  I guess it'll be a runtime cast exception: I've tried the 2.0 <a
+href="http://developer.java.sun.com/developer/earlyAccess/adding_generics/index.html">early
+access release</a> of these features, but they're too
+incomplete to say what happens.  I'm sure it'll all sort itself,  but it's the first part of Java that's ever 
+given me a bad feeling.
+</li>
+
+
+<li>In the same vein, <a href="http://www.jcp.org/en/jsr/detail?id=175">metadata (JSR 175)</a> is worrying.  
+It seems to be
+<a href="http://xdoclet.sourceforge.net/">xdoclet</a> formalized in some way, such that you can replace
+naming conventions (e.g., getX, setX) with an "@something" tag
+in your class definition (or maybe javadoc) and then something (the compiler?) will
+generate code for you.  That's my take -- it may be wildly off the
+mark, as
+there were very few slides on metadata in the entire
+conference.  So... very early days for metadata, but it
+was mentioned many times in all sorts of places, so it's
+going to be big.
+</li>
+
+<li>
+Very interested in the <a href="http://www.sun.com/software/projectrave">Project Rave</a> tool.  It's a drag-drop-click
+MS Studio-like tool for building web sites, all backed by good
+stuff like JavaServerFaces.   Early access release due Autumn 2003.  Related articles: <a href="http://theregister.co.uk/content/53/31667.html">Sun: Rave on over to the other side (The Register)</a>.
+</li>
+
+
+<li>
+In other tools news, there was a brief demo of Project Relator,
+which allows you to build a user interface in SVG, and then connect
+SVG hotspots to Java actions.  I thought this was just going to
+be for J2ME devices, but the guy I spoke to was thinking it
+was for all sorts of user interfaces, and that maybe it wouldn't
+be available under MIDP 1.0.   During the demo we saw an Illustrator SVG
+file wired up to web services, with a throw away line about the 
+web services library being about 3k, which was probably
+the most impressive part.  Early access due 2004.
+</li>
+
+<li>
+<a href="http://www.jcp.org/en/jsr/detail?id=222">JAXB 2.0 (JSR 222)</a> enhances the XML-to-Java-code mapping framework
+ by supporting partial mappings.  That's great news, because it means you can pick which
+bits of an XML document (schema) you want to work with and ignore
+the rest.  There's the possibility that it'll also support updating
+partial documents.  Sounds dull, but is quite exciting, honest.
+</li>
+
+
+<li>
+<a href="http://www.jcp.org/en/jsr/detail?id=223">JSR 223</a> is intriguing: Tomcat is to be the 
+reference implementation for web scripting in Java, initially using PHP.  Does this
+mean PHP developers will be able to make use of Java back end
+code? Don't know.
+</li>
+
+<li>
+<a href="http://www.jcp.org/en/jsr/detail?id=185">JTWI</a> (Java technology for the wireless industry) aka JSR 185
+is intended to pre-empt wireless device manufacturers from introducing
+their own APIs.  E.g., trying to avoid the situation where, say, MIDP 1.0 comes out, and the handset manufacturers go and add
+their own com.nokia or similar APIs for the bits that were missed out.    It consists of a road map
+for where things are heading, and an accompanying set of APIs. The first road map is <a href="http://jcp.org/aboutJava/communityprocess/jsr/JSR185_roadmap.pdf">out now (PDF)</a>.
+</li>
+
+
+<li>
+<a href="http://java.sun.com/j2ee/javaserverfaces/">JavaServerFaces</a> is big. The final release is due autumn 2003, and I like to think of it as a formalization
+of <a href="http://jakarta.apache.org/struts/">Struts</a>. One of the core ideas of JSF is to make web site development under Java something that tools manufacturers can support.   I won't be using it until 1.1 because it
+doesn't have any templating features.
+</li>
+
+<li>Location based API (<a href="http://www.jcp.org/en/jsr/detail?id=179">JSR 179</a>) is out there. It looks like a really well thought-out
+API for getting location-based information on the handset.  This can either be from GPS or from some
+network-based (cell) solution, but as an API user you don't have to worry about how you get the information.  I asked which
+mobile networks were supporting the cell-based location services, but no information was available.  However
+I did learn that there are standards for exposing this information over a network. 
+</li>
+
+
+<li>
+<a href="http://javaoneonline.mentorware.net/servlet/mware.servlets.StudentServlet?mt=1057911447157&mwaction=generic&subsysid=2000&file=gen_sessions_10">Guy Laurance</a>, CEO of Vodafone Global Content Services, told us that downloaded phone apps were selling for an average of US$2.50, of which 
+the developer received US$1.20.  Some of these apps were selling in the millions.
+</li>
+
+
+
+<li>
+Went to see a great presentation on how eBay have been using Java to handle traffic on their web sites.
+Interesting in that they're only using bits of J2EE that they know perform, with the general
+message being that you don't need -- and probably don't want -- to use all of J2EE.  For example,
+they use code generation for database access rather then the J2EE-way.   I also found it interesting
+that they don't use server-side sessions at all.  They either keep what information they need in
+the user's cookies or just go back to the database every time.  This allows them to remove the need
+for server affinity and just make use of a round-robin server architecture.  
+</li>
+
+<li>There was a great presentation on concurrency utilities scheduled for java.util.concurrent in JDK 1.5.  
+What I didn't realize was that these utilities <a href="http://gee.cs.oswego.edu">have been out there</a> for some time.
+The summary: if you're doing anything Thread related (pooling, queues, etc) you want to use
+these utilities.</li>
+
+<li>New websites: <a href="http://www.java.net/">java.net<a> is for the community with a daily
+news section at <a href="http://today.java.net">today.java.net</a> edited by O'Reilly.  <a href="http://www.java.com">java.com</a>
+ is the consumer home page, and Sun are pushing
+ahead to get Java recognized by consumers by having (maybe)
+adverts and some kind of branding on devices.  Good idea.
+</li>
+
+
+<li>And finally... 
+
+<table border="0" cellpadding="4" cellspacing="4">
+<tr>
+	<td valign="middle" align="middle"><img src="v3_java_logo.gif" width="47" height="83" alt="bad, bad logo"/></td>
+
+	<td valign="middle" align="middle"><img src="v4_java_logo.gif" width="38" height="66" alt="good logo"/></td>
+</tr>
+<tr>
+	<td>Bad old logo</td>
+	<td>Good new logo</td>
+</tr>
+
+</table>
+
+</li>
+
+</ul>
+</td>
+
+<td valign="top" align="middle">
+<img src="35A40052.jpg" width="320" height="240" alt="Sun v. Apple ice hockey" /><br />
+Sun v. Apple ice hockey.<br /> <br />
+
+<img src="35AM0053.jpg" width="320" height="240" alt="Thinking time in the Alumni Lounge" /><br />
+Thinking time in the Alumni Lounge.<br /> <br />
+
+<img src="35BI0003.jpg" width="320" height="240" alt="Gareth catching up on sleep" /><br />
+Gareth catching up on sleep.<br /> <br />
+
+<img src="35CF0011.jpg" width="320" height="240" alt="Entertainment before a keynote" /><br />
+Entertainment before a keynote.<br /> <br />
+
+<img src="35CH0014.jpg" width="320" height="240" alt="During a keynote" /><br />
+During a keynote.<br /> <br />
+
+</td>
+</tr>
+
+<!--#include virtual="/footer.html" -->
+
+</BODY>
+</HTML>
+

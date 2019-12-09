@@ -1,0 +1,68 @@
+package com.dallaway.jsptest;
+
+/**
+ * A simple example of using the JSP TEST classes. 
+ * 
+ * <p>
+ * Run this class with a URL as an argument.
+ * <p>
+ * E.g., <tt>java com.dallaway.jsptest.Example1 http://127.0.0.1/foo.html</tt>
+ *
+ * For an example of using JSPTest in the JUnit framework, see JSPTestTest.java
+ * 
+ * @author  $Author: richard $
+ * @version $Revision: 1.2 $  $Date: 2002/12/30 18:24:09 $
+ *
+ */
+public class Example1
+{
+
+  /**
+   * Test that the request URL exists.
+   * @param args Array of arguments, which must contain one value (the URL to request).
+   */
+  public static void main(String[] args)
+  {
+
+    if (args.length != 1)
+    {
+      System.err.println("Usage: com.dallaway.jsptest.Example1 http://someurl/");
+      System.exit(1);
+    }
+
+	// We're going to request this URL:
+    String urlToTest = args[0];
+
+    // First create a session for maintaining cookies etc.
+    // You can think of this as your "client" for requests.
+    Session session = new Session();
+
+    // Next, request the page.
+    Response response = null;
+    try
+    {
+      response = session.request(urlToTest);
+    }
+    catch (Exception ex)
+    {
+      System.err.println("Failed to get page: "+ex);
+      System.exit(1);
+    }
+
+    // We have the page, so show some information about it:
+    
+    System.out.println("Status code: "+response.getStatusCode());
+
+    // Was there a cookie called "foo"?  Making a request may well have
+    // updated the session's list of cookies.
+    String value = session.getCookieValue("foo");
+    System.out.println("Cookie \"foo\" has a value of: "+value);
+
+    // If you want all the cookies, go for:
+    // Cookie[] cookies = s.getCookies();
+
+    // A bit of content:
+    System.out.println("Content starts with: "+ response.getBody().substring(0, 500));
+
+  }
+}

@@ -1,0 +1,30 @@
+<APPLET code="VTextApplet" width=90 height=310>
+
+ <PARAM NAME="bgColor" VALUE="ffff00">
+
+ <PARAM NAME="fontFace" VALUE="Times">
+ <PARAM NAME="fontSize" VALUE="10">
+ <PARAM NAME="fontColor" VALUE="000000">
+
+ <PARAM NAME="bottomMargin" VALUE="30">
+ <PARAM NAME="leftMargin" VALUE="30">
+
+ <!-- border width could be zero, indicating no border -->
+ <PARAM NAME="borderWidth" VALUE="2">
+ <PARAM NAME="textHeight" VALUE="180">
+ <PARAM NAME="borderColor" VALUE="000000">
+
+ <PARAM NAME="textBgColor" VALUE="ffffff">
+ <PARAM NAME="textHeight" VALUE="180">
+
+ <PARAM NAME="buttonURL" VALUE="images/button.gif">
+ <PARAM NAME="buttonLeftMargin" VALUE="30">
+ <PARAM NAME="buttonSpace" VALUE="30">
+
+ <PARAM NAME="cgiURL" VALUE="/cgi-bin/search.cgi">
+ <PARAM NAME="cgiParamName" VALUE="words">
+
+
+
+
+</APPLET>

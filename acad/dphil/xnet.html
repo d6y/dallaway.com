@@ -1,0 +1,111 @@
+<html>
+<head>
+<title>Dynamic of arithmetic: Cascade model</title>
+</head>
+
+<body>
+
+<center>
+<font size=-2>THE DYNAMIC OF ARITHMETIC - RICHARD DALLAWAY</font>
+<br><br><br>
+Chapter 3<br><br>
+<font size=+1>CASCADE MODEL OF MEMORY FOR MULTIPLICATION FACTS</font>
+<br>
+<br>
+</center>
+
+This chapter describes a connectionist model of memory for multiplication
+facts built using McClelland's "cascade" equations
+(McClelland 1979; McClelland & Rumerlahrt 1988).  It is referred to as the 
+"cascade model" or
+"cascade network" (no relation to cascade correlation, Fahlman & Lebiere 1990).
+<P>
+
+The model was originally designed with two objectives in mind. First, in
+contrast to the BSB model, the network should be able to capture occasional
+errors.  That is, although the network should correctly learn all the
+multiplication facts, it should also produce errors when under time
+pressure.  The second objective was to minimize the number of assumptions
+about connection and unit types.  This objective was formulated in the
+context of the Campbell & Graham (1985) model, where many different knowledge
+sources were presented.  The aim was to see how many of the assumptions
+could be omitted.
+<P>
+The above aims were only selected after it was observed that the
+architecture could potentially account for the phenomena.  The network
+was first used as
+a "slave" network, providing arithmetic facts for a
+multicolumn arithmetic network---the one described in chapter 5,
+although the fact network was not used in the final multicolumn network.
+The aim was to investigate what kinds of factual knowledge would be useful
+to the multicolumn network, hence the same technology was used to build the
+fact network (a multilayer perceptron trained with backpropagation).
+The results from the work of Campbell & Graham (1985) suggested that the fact network
+could be tested for RT and errors. When this was done, a primitive RT
+measure showed a dip for 5s problems, prompting further investigation of
+the network.
+<P>
+
+Since then the architecture and representations have changed in many ways.
+For example, the first experiments used a one-of-N input encoding and
+represented answers in separate tens and units fields.  It was found that
+in order to capture human performance, various changes needed to be made.
+This chapter first outlines the "finished product", after all the changes
+have been made. The motivation for the changes, and the results they gave,
+are presented in section 3.4.
+<P>
+
+Much of the literature has focussed on the problems 2x2 to 9x9.  The
+first set of experiments did not simulate ones or zeros problems as human
+empirical data had only been found for 2x2 to 9x9 at that time.  However,
+in light of the work of Harley (1991) and Miller et al (1984), simulations
+of zero and ones problems were performed.  These experiments are presented
+in section 3.3. Finally, the system is compared to the other
+connectionist models, and issues arising from the model are discussed.
+<P>
+
+<font size=-1>
+<menu>
+<li> Architecture of the model
+<menu>
+<li> Recall
+<li> Training
+<li> Training set conditional probabilities
+</menu>
+<li> Simulations for 2x2 to 9x9
+<menu>
+<li> Training
+<li> Recall
+<li> Results
+<li> Comments
+</menu>
+<li> Simulations for 0x0 to 9x9
+<menu>
+<li> Training
+<li> Results
+<li> Comments
+</menu>
+<li> Futher experiments
+<menu>
+<li> One-of-N input encoding
+<li> Training without a frequency skew
+<li> McCloskey & Lindermann's input encoding
+<li> Predictions for the 10, 11 and 12 tables
+<li> Damaging the network
+</menu>
+<li> Discussion
+<menu>
+<li> Choice of output representation
+<li> Rule based processing
+<li> Verification and primed production tasks
+</menu>
+<li> Summary
+<P>
+<a href="toc.html">table of contents</a>
+</menu>
+</font>
+</body>
+</html>
+
+
+

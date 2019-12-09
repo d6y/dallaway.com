@@ -1,0 +1,264 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>Xindice</TITLE>
+		<META name="keywords" content="Xindice, xml database, java, dbXML Core">
+		<META name="description" content="A day spent using Xindice">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../index.html">Writing</a> - Xindice</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+
+<h1>A day with Xindice</h1>
+
+<p>
+Over the course of a few weeks I spent about one day of effort looking at Xindice -- an pen source XML database.
+</p>
+
+---
+http://jakarta.apache.org/lucene/docs/index.html
+
+and
+
+the other XML one
+http://exist.sourceforge.net/
+
+and
+
+
+http://jakarta.apache.org/jmeter/index.html
+
+v. 1.6.1
+
+JDK 1.3.1-b24 Redhat Linux 7.1
+
+untuned, so discounted performance timiings... look at the slope.
+
+<p><b>Contents</b></p>
+
+<ul>
+	<li> <a href="#download">Download</a>
+	<li> <a href="#bidding">Bids</a>
+	<li> <a href="#pick">Selecting a winning bid</a>
+	<li> <a href="#delivery">Code delivery, bug fixing and other nightmares</a>
+	<li> <a href="#conc">Conclusions</a>
+	<li> <a href="#resources">Resources</a>
+
+</ul>
+
+<p>Original: Jan 2002.  This version: $Revision: 1.2 $ $Date: 2002/05/04 11:57:49 $</p>
+
+
+<h2><a name="spec">Download</a></h2>
+
+<p>
+Xindice is in the process of becoming an Apache project, but for now is downloadable from dbxml.org.  I grabbed version 1.0b4 (released Nov 2001) and I also downloaded utilities-11042001.
+
+Redhat 7.1
+
+/usr/local/dbxml-10b4/
+/usr/local/xindice to
+
+set $XINDICIE_HOME and EXPORT it (the tools expect to find this)
+JAVA_HOME already set for jdk 1.3.1
+
+added $XINDICIE_HOME/bin to PATH in /etc/profile
+
+
+It's the new name for dbXML
+(pronounced zeen-dee-chay).
+
+
+./start
+
+
+
+
+
+-----------
+
+
+books data set
+
+xindiceadmin add_collection -c /db -n books
+
+to create /db/books
+
+
+
+
+import docs
+
+xindice add_multiple_documents -c /db/books -f /home/richard/books/
+
+chundered away added each file (ignoring the non-xml files I'd accidently left in the folder).
+
+
+to double check, I requested the document back.  By default each file was given an id the same as the filenae@:
+
+xindice retrieve_document -c /db/books -n i18n.xml
+
+and it printed out the contents of the file.
+
+NB I quickly learned that the commands can be shorted:
+xindice rd -c /db/books -n i18n.xml
+
+
+Running dbxml with no arguments lists the commands
+
+See the tools reference (resources)
+
+
+xindice xpath -c /db/books -q "/book[rating/@recommended='true']/title"
+to get a list of all the recommended books in my database
+
+xindice xpath -c /db/books -q "/book/body/p[1]"
+to get the first para of each book
+
+
+
+xindice xpath -c /db/books -q "/book[body/p[contains(., 'experience')]]/title"
+to get all the titles where the review contains the word "experience"
+
+Contains is actually a substring match, and according to the mailing list, will therefore
+be very slow.  I dind't notice it on my small sample of documents, but I can believe it.  There's
+also a mention on the mailing list about adding an xpath extentions for true text search (xpath doesn't
+contain any text seach methods)
+
+
+http://www.dallaway.com/reading/archive/speakangel.xml
+----------------
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<book>
+
+<date>2001-06-01</date>
+<title>Speaking with the Angel</title>
+<author>Nick Hornby (Editor)</author>
+<isbn>0140296786</isbn>
+
+<cover image="/reading/archive/img/speakangel.jpg" width="94" height="140" alt="Speaking with the Angel book cover"/>
+
+<purchase>
+ <order-link company="Amazon" href="http://www.amazon.co.uk/exec/obidos/ASIN/0140296786/richarddallaway" />
+</purchase>
+
+<rating recommended="true">Great</rating>
+
+<body>
+
+<p>
+Collection of short storied from Hornby, Doyle, Fielding, Welsh, O'Farrell....
+</p>
+
+<p>
+Jono handed me this collection and said "it's good, you'll like it".  Or something like that.  He was right.  Every story has been enjoyable, and mostly I've found them funny.
+</p>
+
+</body>
+
+</book>
+--------------------
+
+
+CODING
+
+The XML:DB Initiative, built on top of a CORBA service.
+core level 1 plus collection management and update query optional services.
+
+Get a handle on a Database, then a Collection.
+
+From a collection you can navigate the documents or request a service such as an XPathQuery service.
+
+The results of a query is a ResourceSet with you can iterate over. Oddly, although you can get each individual resource as a DOM, there's no standard wrapper to get the results set as a DOM (which would be handy for rendering using XSL-T).
+
+Very poor documentation on what is and is not thread safe.  It seems from the Xindice "addressbook" examples that Collection is thread safe.
+
+
+
+
+
+DOM Results
+<?xml version="1.0"?>
+<title xmlns:src="http://xml.apache.org/xindice/Query" src:col="/db/books" src:k
+ey="potter.xml">Harry Potter and the Philosopher&apos;s Stone</title>
+<?xml version="1.0"?>
+<title xmlns:src="http://xml.apache.org/xindice/Query" src:col="/db/books" src:k
+ey="whywebuy.xml">Why We Buy: The Science of Shopping</title>
+
+
+
+-----------------
+
+
+JBoss 2.4.4 Tomcat 4.0.1 (Dec 29, 2001 release)
+p3 500 256Meg
+
+
+
+------------------------
+DIDN'T LOOK AT
+
+- binary storage
+- transactions
+- updates
+- api-based collection/document management
+- backups (online or offline)
+- load balancing/failover
+- authentication (database login)
+
+
+---
+MAILING LIST:
+
+V. quick repsonse, low volume (4 messages a day)
+
+
+Twice..answers within 15 mins.
+
+
+http://www.schatten.info/software/xindice_browser/xindice_browser.html
+
+http://ophelia.cs.put.poznan.pl/yab/
+
+<h2><a name="resources">Resources</a></h2>
+
+<ul>
+
+<li> At the time of writing, Xindice can be found as dbXML Core at <a href="http://www.dbxml.org/">http://www.dbxml.org/</a>.  It will move to the Apache site at some point, possibly as
+http://xml.apache.org/xindice/.
+
+
+http://www.dbxml.org/docs/ToolsReference.html
+
+User mailing list
+http://marc.theaimsgroup.com/?l=xindice-users&r=1&w=2
+
+
+Vendor-neutral XML database API
+http://www.xmldb.org/xapi/index.html
+
+Java docs
+http://www.xmldb.org/xapi/api/org/xmldb/api/modules/package-summary.html
+
+
+</ul>
+
+
+
+
+<!--#include virtual="/footer.html" -->
+
+</BODY>
+</HTML>

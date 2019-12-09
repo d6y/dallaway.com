@@ -1,0 +1,52 @@
+How to use JSP Test
+
+JSP Test allows you to make HTTP and HTTPS requests.  It is
+intended for use with unit testing software, such as JUnit,
+to automate unit testing of web resources.  That is, you make
+requests and then check that the page contains the contents
+you expect it to contain.
+
+To do this you create a Session object, create a Request,
+send the Request and then check the resultant Response.
+
+In code:
+
+  // The session is used to maintain cookie values
+  Session session = new Session();
+
+  // You can set cookie values if you want:
+  session.addCookie( new Cookie("name", "value") );
+
+  // This is a GET request, but you can also use
+  // session.newPostRequest(url) for POST requests.
+  Request request = session.newGetRequest("http://someplace");
+
+  // Before you send() the Request you can also set parameters:
+  request.addParameter("name", "value");
+
+  // Send the request (which might throw and IOException):
+  Response response = session.send(request);
+
+
+Once you have a response you can examine elements of the
+response. 
+
+  // The body text that was received:
+  String text = response.getBody();  
+ 
+  // The HTTP status code, such as 200 or 404.
+  int status = response.getStatus(); 
+  
+  // A list of the HTTP header names sent back...
+  String[] headerNames = response.getHeaderNames();
+
+  // ...and look up the value of a particular header.
+  String value = response.getHeader("header name");
+
+  // The response may have included cookie changes which  
+  // you can check from the session:
+  Cookie[] cookies = session.getCookies();
+  
+  
+For more examples see the apidoc/ and the JSPTestTest.java code.
+

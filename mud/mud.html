@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="StarOffice/5.2 (Win32)">
+	<META NAME="AUTHOR" CONTENT="Richard Dallaway">
+	<META NAME="CREATED" CONTENT="20000313;20330700">
+	<META NAME="CHANGEDBY" CONTENT=" ">
+	<META NAME="CHANGED" CONTENT="20000614;4311431">
+	<STYLE>
+	<!--
+		@page {  margin-left: 3cm; margin-right: 3cm; margin-top: 2cm; margin-bottom: 2cm }
+		P { margin-bottom: 0.21cm; font-family: "Times New Roman", serif; font-size: 10pt }
+		h2 { margin-top: 0.5cm; margin-bottom: 0.21cm; font-family: "Gill Sans", sans-serif; font-size: 10pt; text-decoration: none; page-break-before: auto; page-break-after: avoid }
+		h1 { font-family: "Gill Sans", sans-serif; font-size: 11pt }
+	-->
+	</STYLE>
+</HEAD>
+<BODY bgcolor="#ffffff">
+
+<h1>MUD to WAP gateway</h1>
+
+<p>Richard Dallaway</p>
+<p>2000-06-14</p>
+
+<h1>Introduction</h1>
+
+<P STYLE="font-style: normal">Text-based adventure games (MUDs, MOOs)
+are characterised by real-time social interactions between players.
+This document describes an architecture for accessing MUDs via
+WAP-enabled mobile devices.</P>
+<h2>Principles</h2>
+<P STYLE="font-style: normal">There are a wide variety of MUDs
+running on different platforms with a different themes and
+conventions.  The common element is that they are based on
+asynchronous free text flow over sockets: there is no higher-level
+protocol, such as HTTP, involved.
+</P>
+<P STYLE="font-style: normal">Players send commands as free text back
+to the server.  The servers parse the free text commands and
+interpret the message as actions.</P>
+<P STYLE="font-style: normal">A MUD to WML gateway would have to:</P>
+<OL>
+	<LI><P STYLE="font-style: normal">Convert the text from the MUD to a
+	WML representation suitable for the the mobile device.  In
+	particular this will mean buffering the asynchronous data from the
+	server and cutting the received text into suitable sized decks.</P>
+	<LI><P STYLE="font-style: normal">Maintain state between the mobile
+	client and the MUD server.  That is, the gateway will be providing
+	services to multiple users playing on different MUDs, and therefore
+	has to know how to direct text flow between the appropriate parties.
+	 This is a function of the gateway because WAP, like HTTP, is a
+	state-less protocol.</P>
+	<LI><P STYLE="font-style: normal">Add usability elements by
+	hot-linking common MUD commands or provide commands on a options
+	soft-key: exit, south, north, east, west, up, down, flee, save,
+	status, inventory.</P>
+</OL>
+<P STYLE="font-style: normal"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.42cm; page-break-before: auto; page-break-after: avoid">
+<h1>Architecture</h1>
+<P STYLE="font-weight: medium">The proposed configuration is shown in
+figure 1.</P>
+<P STYLE="font-weight: medium"><BR><BR>
+</P>
+<P STYLE="font-weight: medium"><IMG SRC="sv112113.gif" NAME="Object1" ALIGN=LEFT WIDTH=659 HEIGHT=437><BR CLEAR=LEFT><BR><BR>
+</P>
+<h2>Buffering</h2>
+<P STYLE="font-weight: medium">Text send from the server is
+asynchronous.  However, the WML content sent to the mobile client has
+to be a complete XML document before it is rendered: there cannot be
+an ongoing dialogue to the client (not until someone invents
+&quot;waplets&quot;).  The buffer will receive and store anything
+sent from the server on behalf of the mobile client.   The page
+control element will decide what should be sent to the client and
+when.</P>
+<h2>Page control</h2>
+<P STYLE="font-weight: medium">The page control has four functions:</P>
+<OL>
+	<LI><P STYLE="font-weight: medium">Ensuring content is small enough
+	to send to the mobile client.  This means cutting content into
+	multiple pages when necessary.</P>
+	<LI><P STYLE="font-weight: medium">Making any required WML entity
+	mappings (e.g., &amp; translated to &amp;amp; and so on) and adding
+	appropriate WML tags.</P>
+	<LI><P STYLE="font-weight: medium">Adding navigation or MUD specific
+	commands into the WML deck.</P>
+	<LI><P STYLE="font-weight: medium">Controlling when enough
+	information has been received to send to the client.</P>
+</OL>
+<P STYLE="font-weight: medium">Point four deals with the asynchronous
+aspect of the MUD communication.  The problem is this: when do you
+decide that there is an appropriate break in the output from the MUD
+server?  This is no prompt or protocol headers to say &quot;and now
+it's the client's turn to send something&quot;.</P>
+<P STYLE="font-weight: medium">The following is proposed:</P>
+<OL>
+	<LI><P STYLE="font-weight: medium">All content send from the server
+	is stored in the buffer.</P>
+	<LI><P STYLE="font-weight: medium">If there is a 500 ms pause in the
+	sending of the content after a new line character, then the content
+	is sent to the client.</P>
+	<LI><P STYLE="font-weight: medium">If there is a total of a two
+	second pause in the content sent to the buffer, and there is also
+	content in the buffer, then the content is sent to the client.
+	</P>
+	<LI><P STYLE="font-weight: medium">If there is no content in the
+	buffer, and there is a five second pause, the client may be sent the
+	text &quot;waiting for server to respond&quot;.</P>
+	<LI><P><SPAN STYLE="font-weight: medium">Nothing else can be sent to
+	the client until the client makes a request: either sending a
+	command, which may just be a blank command (&quot;hitting return&quot;
+	or requesting &quot;get more&quot;</SPAN>).  If the client requests
+	more content and there is nothing in the buffer (cf. point 4) then
+	the client will see the &quot;waiting for server to respond&quot;
+	message.</P>
+</OL>
+<h2>Session management</h2>
+<P>At this time it is not possible to rely on HTTP-style cookies to
+work with all WAP gateways.  As a result the MUD to WAP gateway will
+have to maintain a unique session variable for each client.  This
+will be an integer sent with every request from the client as a
+&quot;hidden value&quot; in a form.  The gateway will be responsible
+for including this value for each page it sends to the mobile client.</P>
+<P><BR><BR>
+</P>
+<P STYLE="margin-top: 0.42cm; page-break-before: auto; page-break-after: avoid">
+<h1>Interface</h1>
+<h2>Screen 1: home page</h2>
+<P>Two links:</P>
+<P>(a) popular MUDs (go to screen 2)</P>
+<P>(b) custom MUD (go to screen 3)</P>
+<P><BR><BR>
+</P>
+<h2>Screen 2: popular MUDs</h2>
+<P> A list of links showing popular MUD names.  Note that this list
+can be evolved based on the paramters users enter via the custom MUD
+option.</P>
+<P>The links will take the user to screen 4.</P>
+<h2>Screen 3: custom MUD</h2>
+<P>This is a form allow the user to enter hostname or IP address of a
+MUD server and the port.</P>
+<P>Submitting the form will take the user to screen 4.</P>
+<h2>Screen 4: confirmation</h2>
+<P>This page shows the user the choice of mud they are about to
+enter.  It allows the user to bookmark the selection.</P>
+<P>Following an ENTER link will take the user to screen 5.</P>
+<h2>Screen 5: game play</h2>
+<P>Response from the server are shown on this page.  At the end of
+the page there is a form allowing the user to send back commands to
+the MUD server.</P>
+<P>Popular commands will be shown on the options soft key.  These
+will be:</P>
+<P>exits, inventory, north, east, south, west, up, down, flee, who,
+save, quit.</P>
+<P>An on-going project could be to try to  parse the MUD server
+output to insert context sensitive commands such as:  kill troll,
+swing sword, exam corpse, say to jono, read sign.</P>
+<P>The user should be encouraged to respond quickly because there MUD
+to WAP gateway may be buffering important MUD events (such as &quot;the
+sprit hits you with sword&quot; and so on).</P>
+
+
+
+</BODY>
+</HTML>

@@ -1,0 +1,356 @@
+<HTML>
+	<HEAD>
+		<TITLE>Renewal - Java Web Start and Code Signing</TITLE>
+		<META name="keywords" content="Java Web Start, JNLP, sloppy, browser, sign, signing, signature, free, certificate">
+		<META name="description" content="Step by step guide to signing code via Thawte.">
+		<LINK  REL="STYLESHEET" HREF="../../layout.css" TYPE="text/css" />
+		<LINK  REL="STYLESHEET" HREF="../style.css" TYPE="text/css" />
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../index.html">Writing</a> - <a href="./index.html">Web Start and Code Signing</a> - Renewal Steps</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+<h1>Renewing a certificate</h1>
+
+<p>
+A Thawte certificate is only valid for one year, meaning you'll need to 
+renew the certificate.  Here's a step-by-step on how to do that.
+</p>
+
+<p>
+<A HREF="/contact">Richard Dallaway</A>, <a href="http://www.spiralarm.com/">Spiral Arm Ltd</a>.
+</p>
+
+<p>May 2006</p>
+
+
+
+
+
+
+<h1>Knowing you need to renew</h1>
+
+<p>
+You'll probably get an email from Thawte warning you that your
+certificate is to expire some months in advance.  If you also
+use the Ant task I mentioned in the <a href="index.html">original article</a>,
+you'll know you'll need to renew because runing the task will produce
+output like this:
+</p>
+
+<blockquote>
+<pre class="example-code">
+richard@hotdog:sloppy $ ant -f etc/build.xml sign
+Buildfile: etc/build.xml
+
+sign:
+  [signjar] Signing Jar : sloppy.jar
+  [signjar] Warning: <span style="color: red">The signer certificate has expired.</span>
+
+BUILD SUCCESSFUL
+Total time: 3 seconds
+</pre>
+</blockquote>
+
+
+<h1>How to renew</h1>
+
+<p>The first thing to know is that you can't renew the certificate.  What you
+actually do is create a new signing request.  Here's how...
+</p>
+
+
+
+<h2>1. Login</h2>
+
+<p><a href="renew-img/01status.png" target="_webstart_img"><img src="renew-img/01status-thumb.jpg" width="350" height="206" /></a></p>
+
+<p>
+Login to manage your personal email certificates, via 
+<a href="https://www.thawte.com/cgi/personal/cert/status.exe">https://www.thawte.com/cgi/personal/cert/status.exe</a>.
+- don't both trying to access this view the "Renew" links on the Thawte site.
+You'll be asked to login to view this page using your Thawte ID and password.
+</p>
+
+<p>
+Under the "expired" message, follow the link to "request another".
+</p>
+
+
+
+<h2>2. Select certificate type</h2>
+
+
+<p><a href="renew-img/02renew.png" target="_webstart_img">
+<img src="renew-img/02renew-thumb.jpg" width="350" height="210" />
+</a>
+</p>
+
+<p>A window will appear offering two options. You want to press the "test"
+button that is under the "Developers of New Security Applications ONLY" heading.
+</p>
+
+
+<h2>3. Certificate types</h2>
+
+<p><a href="renew-img/03available.png" target="_webstart_img">
+<img src="renew-img/03available-thumb.jpg" width="345" height="350" />
+</a>
+</p>
+
+<p>The next window to show up will list the certificates that are available
+for request.  Select the "Paste-in CSR Certificate Enrollment" option
+and press the "test" button.
+</p>
+
+
+<h2>4. Configure name</h2>
+<p><a href="renew-img/04name.png" target="_webstart_img">
+<img src="renew-img/04name-thumb.jpg" width="345" height="350" />
+</a>
+</p>
+
+<p>On the Configure Certificate Name, I just pressed the "next" button.
+</p>
+
+
+<h2>5. Email address</h2>
+
+<p><a href="renew-img/05emailconfig.png" target="_webstart_img">
+<img src="renew-img/05emailconfig-thumb.jpg" width="345" height="350" />
+</a>
+</p>
+
+<p>
+Configure the email address by ticking the email address you're
+presented with, and press "next".
+</p>
+
+
+
+<h2>6. Extranet</h2>
+
+<p><a href="renew-img/06extranet.png" target="_webstart_img">
+<img src="renew-img/06extranet-thumb.jpg" width="345" height="350" />
+</a>
+</p>
+
+For me, the next page (Extranet capabilities) only offered a "next" button, 
+so I pressed it.  This presented me with some configuration options, but
+I selected the defaults.
+</p>
+
+
+
+<h2>7. Paste in request</h2>
+
+<table border="0">
+<td valign="top">
+Now it's time to paste in the new certificate request. I recommend creating a new alias
+for your renewal and running the following command:
+<pre><code style="font-size: 9pt;">
+$ keytool -genkey -keyalg RSA -keystore keystore -alias myalias2
+Enter keystore password:  trustno1
+What is your first and last name?
+<span style="color:red">Imporant: see below on where this value comes from:</span>
+  [Unknown]:  pkYkVLLYF7us 
+  at is the name of your organizational unit?
+  [Unknown]:  sloppy
+What is the name of your organization?
+  [Unknown]:  dallaway.com
+What is the name of your City or Locality?
+  [Unknown]:  Brighton
+What is the name of your State or Province?
+  [Unknown]:  E. Sussex
+What is the two-letter country code for this unit?
+  [Unknown]:  GB
+Is CN=pkYkVLLYF7u, OU=sloppy, O=dallaway.com, L=Brighton,
+    ST=E. Sussex, C=GB correct?
+  [no]:  yes
+
+Enter key password for &lt;myalias2&gt;
+        (RETURN if same as keystore password):  trustno1
+</code></pre>
+
+<p>The really important part here is that the first and last name you 
+enter <b>must</b> be the "CommonName" show as item 2 of 
+this Thawte screen (shown right).</p>
+
+<p>
+Now export your signing request to a text file:
+</p>
+
+<pre><code style="font-size: 9pt;">
+keytool -certreq -keystore keystore -file renew.txt -alias myalias2
+</code></pre>
+
+The file <code>renew.txt</code> will look something like this...
+<pre><code style="font-size: 9pt;">
+-----BEGIN NEW CERTIFICATE REQUEST-----
+MIIBtzCCASACAQAwdzELMAkGA1UEBhMCR0IxEjAQBgNVBAgTCUUuIFN1c3NleDERMA8GA1UEBxMI
+QnJpZ2h0b24xFTATBgNVBAsdlfj9bGxhd2F5LmNvbTEPMA0GA1UECxMGc2xvcHB5MRkwFwYDVQQD
+ExBwa1lrVkxMWUY3dYNoSzc4MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgJV20oVBRZ1Ge
++l1++UXPZ23iJIg7qd+GIzasm8dBpk2UbyXLBUjRN/HBT9vmtXiLfKjy9YQKQ6FJeENRHK/rJW8U
+lO7jREz+/OzraKrxrYHBz2KbHMVcKpQ3aZfVAYeOzycgvONUSWOxMp4uP0hSiEQhyReV6vDEGV1t
+n8chAQIDAQABoAdwDQYJKoZIhvcNAQEEBQADgYEAERR1C5lNQz/RwrYmcDrQJ611jmRyKM3QXQsD
+9JoeUV8lceE/8wBEKSPZYmnKHqbn9khP7ZjNEROZyE0U876t1xifSBm1wkUnB2i1euk+SeEBcjVm
+QbuAANUuNDD6v2WIiiSM3pjGQ2X3mmmmmmDQ0Rn3b9GlrsGXapxBVr0=
+-----END NEW CERTIFICATE REQUEST----
+</code></pre>
+
+...and this is the value you paste into the Thawte text box and press next button.
+</td>
+<td valign="top">
+<a href="renew-img/07generate.png" target="_webstart_img">
+<img src="renew-img/07generate-thumb.jpg" width="345" height="350" />
+</a>
+</td>
+</tr>
+</table>
+
+<h2>8. Confirm</h2>
+
+<p><a href="renew-img/08confirm.png" target="_webstart_img">
+<img src="renew-img/08confirm-thumb.jpg" width="330" height="350" />
+</a>
+</p>
+
+<p>You will now see a confirmation screen. Press the "finish" button.
+</p>
+
+
+
+<h2>9. Finished</h2>
+
+<p>
+<a href="renew-img/09finish.png" target="_webstart_img">
+<img src="renew-img/09finish-thumb.jpg" width="330" height="350" />
+</a>
+</p>
+
+<p> Your request will be submitted to Thawte and you will see a confirmation screen.
+You will receive a confirmation via email that your request has been
+submitted, and some time later (probably minutes) you'll have confirmation
+that your request has been processed and your certificate is ready to download.
+</p>
+
+<p>
+<a href="renew-img/email1.png" target="_webstart_img">
+<img src="renew-img/email1-thumb.jpg" width="311" height="350" />
+</a>
+ <a href="renew-img/email2.png" target="_webstart_img">
+<img src="renew-img/email2-thumb.jpg" width="253" height="350" />
+</a>
+</p>
+
+
+<h2>10. Download</h2>
+
+<p>
+<a href="renew-img/10donestatus.png" target="_webstart_img">
+<img src="renew-img/10donestatus-thumb.jpg" width="350" height="293" />
+</a>
+
+<p>You don't have to wait for the email.  You can go to the <a href="https://www.thawte.com/cgi/personal/cert/status.exe">status page</a>
+ and view
+the deails for the certificate: when it's down click on the Fetch button to
+download the client.</p>
+
+<p>You'll get a page full that looks like this:</p>
+
+<p>
+<a href="renew-img/11text.png" target="_webstart_img">
+<img src="renew-img/11text-thumb.jpg" width="350" height="260" />
+</a>
+
+<p>
+Copy all text between BEGIN PKCS #7 SIGNED DATA and the END part, including those parts 
+and save to a file, maybe called <code>mycert2.cert</code>.</p>
+
+<h2>11. Import your certificate</h2>
+
+<p>
+You'll probably need to "fix" the certificate:</p>
+
+<code>
+java -jar thawtecleaner.jar mycert2.cert
+</code>
+
+<p>Then import the certificate:</p>
+
+<code><pre>
+$ keytool -import -file mycert2.cert.clean -alias myalias2 -trustcacerts -keystore keystore 
+Enter keystore password:  trustno1
+Certificate reply was installed in keystore
+</pre></code>
+
+
+<p>If you get an error, such as <code>java.lang.Exception: Input not an X.509 certificate</code>, you should
+check the Thawte support documents (<a href="http://www.thawte.com/ssl-digital-certificates/technical-support/code/java.html">here</a>
+ and <a href="http://search.thawte.com/thawte/documentDisplay.do?clusterName=DefaultCluster&preview=1&groupId=1&page=null&docType=1006&resultType=5002&docProp=$solution_id&docPropValue=vs23091">here</a>).
+Also make sure you're running the command import command with the right paths to keystore.
+</p>
+
+<h2>12.  Sign your applicaiton</h2>
+
+<p>We can now re-run out signijng command, but ensure that we've
+changed the alias. E.g., in your <code>build.xml</code> file:</p>
+<code><pre>
+&lt;target name="sign"&gt;
+	&lt;signjar keystore="keystore"
+		jar="sloppy.jar" alias="myalias" storepass="trustno1"/&gt;
+&lt;/target&gt;
+</pre></code>
+
+
+<p>Finally run the signing command:</p>
+
+<code><pre>
+$ ant -f etc/build.xml sign
+Buildfile: etc/build.xml
+
+sign:
+  [signjar] Signing Jar : sloppy.jar
+
+BUILD SUCCESSFUL
+Total time: 2 seconds
+</pre></code>
+
+<p>Congratulations!  Your application is signed.</p>
+
+
+<script type="text/javascript"><!--
+google_ad_client = "pub-7754260355934493";
+google_ad_width = 336;
+google_ad_height = 280;
+google_ad_format = "336x280_as";
+google_ad_channel ="0980590088";
+google_color_border = "CCCCCC";
+google_color_bg = "FFFFFF";
+google_color_link = "000000";
+google_color_url = "666666";
+google_color_text = "333333";
+//--></script>
+<script type="text/javascript"
+  src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+
+
+
+
+<p>renew.html,v 1.3 2006/04/24 11:16:53 richard Exp</p>
+
+<!--#include virtual="/footer.html" -->
+
+</BODY>
+</HTML>

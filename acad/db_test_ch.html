@@ -1,0 +1,287 @@
+<html><head>
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<meta http-equiv="Content-Type" content="text/html; charset=big5">
+<title>Unit testing database code</title></head>
+
+<body>
+
+<h1><span lang="zh-tw">單元測試資料庫程式碼</span><a href="http://www.dallaway.com/acad/dbunit.html">Unit testing database 
+code</a></h1>
+<p><font face="Arial">
+    <span lang="zh-tw">原作者：</span>Richard Dallaway<span lang="zh-tw">,</span>May 2001</font></p>
+<p><span lang="zh-tw"><font face="Arial">翻譯：</font></span><a href="http://www.dotspace.idv.tw/index.html"><img height="28" src="db_test_ch_files/file_1.htm" width="85" border="0"></a><font face="Arial">Areca 
+Chen 2002/1/2<span lang="zh-tw">9</span></font></p>
+<p><span lang="zh-tw">本文是我在資料庫功能單元測試的筆記。以<font face="Arial">Java為範例，但我想這些觀念可以應用在不同的程式環境。我也還持續找尋更好的解決方式。</font></span></p>
+<p><span lang="zh-tw">我想解決的問題是：你有一個<font face="Arial">SQL資料庫，一些儲存程序(</font></span><font face="Arial">stored 
+procedures<span lang="zh-tw">)，及在應用程式與資料庫之間中間層的程式碼。你如何把測試放在正確的地方以確認你的程式碼正確的從資料庫讀寫資料？</span></font></p>
+<ul>
+  <li><span lang="zh-tw"><a href="#%AC%B0%A4%B0%BB%F2%ADn%BE%E1%A4%DF">為什麼要擔心</a>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; 
+  </span> </li>
+  <li><span lang="zh-tw"><a href="#%A7%DA%AD%CC%B0Q%BD%D7%AA%BA%AD%FE%C3%FE%B4%FA%B8%D5">我們討論的是哪類測試？</a></span></li>
+  <li><span lang="zh-tw"><a href="#%B5L%AAk%B9F%A8%EC%A5%D8%AA%BA%AA%BA%A4%E8%A6%A1">無法達到目的的方式&#160;</a>&#160;&#160;&#160;&#160;&#160;&#160;&#160;</span></li>
+  <li><span lang="zh-tw"><a href="#%A7A%BB%DD%ADn%A5%7C%AD%D3%B8%EA%AE%C6%AEw">你需要四個資料庫</a>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</span></li>
+  <li><span lang="zh-tw"><a href="#%B4%FA%B8%D5%A8%CC%BEa%A5%BF%BDT%AA%BA%B8%EA%AE%C6%AEw">測試相對正確的資料庫</a>&#160;&#160;&#160;&#160;</span></li>
+  <li><span lang="zh-tw"><a href="#%B5%B2%BD%D7">結論</a>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</span></li>
+  <li><span lang="zh-tw"><a href="#%B5%F9%C4%C0">註釋</a>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</span></li>
+  <li><span lang="zh-tw"><a href="#%B4%FA%B8%D5%A4%E9%B4%C1%AA%BA%AC%DB%C3%F6%BB%A1%A9%FA">測試日期的相關說明</a>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</span></li>
+  <li><span lang="zh-tw"><a href="#%B8%EA%B7%BD">資源</a>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</span></li>
+</ul>
+<p><span lang="zh-tw">原版本</span>: April/May 2001. <span lang="zh-tw">本版本</span>: $Revision: 1.1 $ $Date: 2001/07/31 
+10:41:24 $</p>
+<p><b><span lang="zh-tw">更新日期</span>:</b> </p>
+<ul>
+  <li><font face="Arial">2001-09-26:<span lang="zh-tw">在資源部分新增連結至</span>Mock<span lang="zh-tw">測試的論文。</span></font></li>
+  <li><font face="Arial">2001-07-31: <span lang="zh-tw">開始從JUnit Yahoo!信件群組<a href="http://www.dallaway.com/acad/junit-yahoo-db.html">收集相關項目</a>。</span></font></li>
+  <li><font face="Arial">June 2001: <span lang="zh-tw">新增一個<a href="http://www.dallaway.com/cgi-bin/xmlboardsolo.cgi?board=dbunit&amp;action=index">討論區</a>。</span>Added a
+  <a href="http://www.dallaway.com/cgi-bin/xmlboardsolo.cgi?board=dbunit&amp;action=index">
+  discussion board</a>. </font> </li>
+</ul>
+<p>　</p>
+<hr>
+<h2><span lang="zh-tw"><a name="為什麼要擔心">為什麼要擔心</a></span>Why bother?</h2>
+<p><span lang="zh-tw">我猜測資料庫應用程式開發應該像這樣：開設資料庫、撰寫程式碼存取資料庫、執行程式碼、執行<font face="Arial">SELEST看看資料庫所顯示的紀錄</font>。他們過去這樣做？很好，那麼我們已完成了。</span></p>
+<p><font face="Arial"><span lang="zh-tw">『視覺化審視(</span><b>visual inspection<span lang="zh-tw">)</span></b><span lang="zh-tw">
+』的問題是：你不是常常執行，你也不是隨時檢查所有的東西。唯一可能的是當你變動系統；可能是幾個月之後；你破壞了一些東西而某些資料遺漏了。身為程式設計師你可能不會花太多時間檢查資料本身，因此可能不久之後這個錯誤便成為表面化。我曾在一個網頁專案中工作，在一個登錄畫面中有一個指令(mandatory)欄位在最主要的一年未被新增到資料庫中。雖然市場上抗議說他們<b>需要</b>這個資訊，但是問題並未明確指出因為資料從未被看到（但別讓我在那上面開始）。</span></font></p>
+<p><span lang="zh-tw"> 自動化測試--輕鬆的測試可以不斷的測試而且大量的測試--降低你的資料遺漏的機會。我發現自動化測試可以讓我晚上睡的更好。（測試總是有著正面的形象：測試是如何使用程式碼的好的範例，測試就像一種文件，當你需要變動程式碼時可以讓別人免於擔心其程式碼受遭殃，測試降低除蟲的時間。）</span></p>
+<h2><span lang="zh-tw"><a name="我們討論的哪類測試">我們討論的是哪類測試</a>？</span>What kinds of tests are we talking about?</h2>
+<p><span lang="zh-tw">
+以一個簡單的使用者資料庫為例，其中有一個欄位放置電子信箱及一個旗標；這個旗標代表此電子信箱是否回復。你的資料庫層可能包含的方法有：<font face="Arial">insert、update、delete及find。</font></span></p>
+<p><font face="Arial"><span lang="zh-tw">
+insert方法呼叫一個儲存程序將電子信箱寫入資料庫欄位中。簡單的程式碼可能看起來像下面：</span></font></p>
+<pre class="example-code"><font face="Arial" size="3">public class UserDatabase
+{
+  ...
+  public void insert(User user)
+  {
+    PreparedStatement ps = connection.prepareCall("{ call User_insert(?,?) }");
+    ps.setString(1, user.getEmail());
+    ps.setString(2, user.isBad());  // <span lang="zh-tw">一般而言這個是一個布林值 </span>
+    ps.executeUpdate();
+    ps.close();
+  }
+  ...
+}</font>
+</pre>
+<p><span lang="zh-tw">這種的測試碼我目前想到的應該看起來像下面：</span></p>
+<pre class="example-code"><font face="Arial" size="3">public class TestUserDatabase extends TestCase
+{
+  ...
+  public void testInsert()
+  {
+    //<span lang="zh-tw">新增一個測試使用者</span>
+    User user = new User("some@email.address");
+    UserDatabase database = new UserDatabase();
+    database.insert(user);
+
+    // <span lang="zh-tw">確認資料已存入</span></font></pre>
+<pre class="example-code"><font face="Arial" size="3">    User db_user = database.find("some@email.address");
+    assertTrue("Expected non-null result", db_user != null);
+    assertEquals("Wrong email", "some@email.address", db_user.getEmail());
+    assertEquals("Wrong bad flag", false, db_user.isBad());
+  }
+  ...
+}</font>
+</pre>
+<p><span lang="zh-tw">......你應該還有更多的測試（請小心某些測試，如<a href="#%B4%FA%B8%D5%A4%E9%B4%C1%AA%BA%AC%DB%C3%F6%BB%A1%A9%FA">日期</a>的測試）</span></p>
+<p><font face="Arial"><span lang="zh-tw">assertTrue()及assertEquals()方法測試條件式是否為真，而如果測試失敗會顯示一個診斷訊息。概念上此測試是透過一個測試框架自動執行，並
+明確的顯示失敗或成功的旗標。那是以<a href="#junit.org">JUnit（參閱：資源）</a>為基礎，Junit是Java的測試框架。這個框架可以應用於其他的語言，包括</span> 
+C, C++, Perl, Python, 
+.NET (<span lang="zh-tw">所有語言</span>), PL/SQL, Eiffel, Delphi, VB...
+<a href="#testing">(<span lang="zh-tw">參閱：資源</span>)</a>.</font> </p>
+<p><span lang="zh-tw">接下來的問題是：我們已經有了測試，但我們如何管理這些資料庫中的測試資料而不至於污染真實的資料？</span></p>
+<h2><span lang="zh-tw"><a name="無法達到目的的方式">無法達到目的的方式</a></span>Approaches that don't work</h2>
+<p><span lang="zh-tw">在我開始之前，我要指出的是我期望你有一個開發資料庫。你將不要在已是產品的資料庫中做我於此提及的任何事。</span></p>
+<p><span lang="zh-tw">我嘗試的第一種方式是手動新增一些測試資料到已是產品的資料庫中。這些資料是已知值的，如<font face="Arial">『testuser01@test.testing』。如果你要測試搜尋功能，你必須知道這些資料已經在那裡了，如，5個『＠test.testing』使用者在資料庫
+中。</font></span></p>
+<p><span lang="zh-tw">
+如上述範例新增測試記錄；測試本身必須維護資料庫狀態。換言之，測試必須在測試完成後確認清除測試資料，並小心不要刪除真正的資料，以便資料庫在測試完成後還原成它原來的狀態。</span></p>
+<p><span lang="zh-tw">這種方式有下面幾個原因困擾著我：</span></p>
+<ul>
+  <li><span lang="zh-tw">你必須與其他開發者同步你的測試記錄--假設他們有他們自己的測試資料庫。</span></li>
+  <li><span lang="zh-tw">在資料庫中使用『特定值<font face="Arial">(magic 
+  values)』似乎是不正確的。（特別的email位址，專用的id字首(</font></span><font face="Arial">reserved 
+  id prefixes</font><span lang="zh-tw"><font face="Arial">)）。</font></span></li>
+  <li><span lang="zh-tw"><font face="Arial">
+  當你無法保留專用的特定值以標示資料為測試資料時你會受到困擾，譬如有一個紀錄是由整數值構成而且所有的值貌似合理的(plausible)。</font></span></li>
+  <li><span lang="zh-tw"><font face="Arial">
+  你的測試登錄受專用的值限制--至少這表示你必須非常小心選擇你的特定值。</font></span></li>
+  <li><span lang="zh-tw"><font face="Arial">
+  如果資料是與時間有關的要維護測試案例變得很困難。例如：資料庫中的產品供應只限於特定日期中。</font></span></li>
+</ul>
+<p>　</p>
+<p><span lang="zh-tw">我嘗試了一些修正：增加一個<font face="Arial">『is_test』欄位到記錄中，以便作為測試紀錄的旗標。如此可以避免『特定值』的問題。此種方式不利的地方是你的測試需要操作的只
+有在is_test欄位標示為真的紀錄，而你已是產品的程式碼操作的記錄是is_test標示為偽的紀錄。如果在這個層次有所差異，你測試的不是相同的程式碼。</font></span></p>
+<h2><span lang="zh-tw"><a name="你需要四個資料庫">你需要四個資料庫</a></span>You need four databases</h2>
+<p><span lang="zh-tw">
+有些其他的想法：好的測試是自我滿足並建立所有它需要的資料。如果你在測試之前讓資料庫是位於已知的狀態測試可以是簡單的。這麼做的一種方式是使用一個分開的單元測試資料庫；並讓這個資料庫在測試案例中控制：測試案例在開始測試之前清除資料庫。</span></p>
+<p><span lang="zh-tw">在程式碼中，你可以使用一個<font face="Arial">dbSetUP()方法達成目的，這個方法看起來像這樣：</font></span></p>
+<pre class="example-code"> <font face="Arial" size="3"> ...
+  public void dbSetUp()
+  {
+    // <span lang="zh-tw">把資料庫控制在已知的狀態下： </span>
+    //<span lang="zh-tw">（於此使用儲存程序是比較好的方式）</span> 
+    helper.exec("DELETE FROM SomeSideTable");
+    helper.exec("DELETE FROM User");
+
+    //<span lang="zh-tw">加入一些通常使用的測試案例：</span> 
+    ...
+  }</font>
+</pre>
+<p><span lang="zh-tw">任何資料庫測試在做任何事之前先將呼叫<font face="Arial">dbSetUP()，這個方法將資料庫控制在已知的狀態下（多數是清空），這種方式有下列的優點：</font></span></p>
+<ul>
+  <li><span lang="zh-tw">所有的測試資料可以在程式碼中與其他開發者溝通：沒有同步擴充測試資料的問題。</span></li>
+  <li><span lang="zh-tw">不用特定值。</span></li>
+  <li><span lang="zh-tw">簡單容易瞭解的方式。</span></li>
+  <li><span lang="zh-tw">
+  在每一個測試中刪除或新增資料可能會花一些時間，但測試實際上使用相當少的資料，我發現這種方式還是相當的快的（尤其是當你執行的是區域性的測試資料庫。）</span></li>
+</ul>
+<p>　</p>
+<p><span lang="zh-tw">這種方式的缺點是你需要不只一個資料庫--但記住--如果需要它們可以放在一個伺服器中執行。我測試的<font face="Arial">方式現在需要4個資料庫（嗯，兩個成一對。）：</font></span></p>
+<ol>
+  <li><span lang="zh-tw"><b>已是產品的資料庫(production database)</b>，實際的資料。此資料庫中無測試。</span></li>
+  <li><span lang="zh-tw">你的<b>區域性開發資料庫(local development database)</b>，在此資料庫中包含大部分的測試。</span></li>
+  <li><span lang="zh-tw"><b>可移植的開發資料庫(populated development database)，</b>大部分屬於所有開發者共享的；以便於你的應用系統執行並使用實際的資料執行以便看看執行結果；而不是你測試資料庫中的資料。你可能不是非常需要這個資料庫，但可以測試在大量資料下你的應用系統的狀況（例如從已是產品的資料庫中複製資料。）</span></li>
+  <li><span lang="zh-tw"><b>部署資料庫(deployment database)</b>或整合資料庫<font face="Arial">(integration 
+  database)，這個資料庫在部署之前執行測試以確認所有的區域性資料庫的改變已完成。如果你是單獨作業可能不需要如此，但你必須確認任何資料庫結構或儲存程序的變動已經在已是產品
+  的資料庫中完成。</font></span></li>
+</ol>
+<p>　</p>
+<p><span lang="zh-tw">使用多個資料庫你必須確保所有的資料庫結構同步：如果你在你的測試機器中變動一個表格<font face="Arial">(table)定義或儲存程序，你必須記得也改變其他的資料庫，部署資料庫應該扮演資料庫改變通知者的角色。同時我發現如果
+變動的通知是自動以email的方式告知所有開發者；那麼資源控制系統在此有所幫助。<a href="#CVS">CVS（參閱：資源</a>）</font></span></p>
+<h2><span lang="zh-tw"><a name="測試依靠正確的資料庫">測試相對正確的資料庫</a></span>Test against the right database</h2>
+<p><span lang="zh-tw">在此環境中你必須確認你連接的資料庫是正確的，執行測試於已是產品的資料庫會刪除你所有的資料。這是很恐怖的。</span></p>
+<p><span lang="zh-tw">
+有一種方式可以保護你的資料庫。例如，通常的方式是將資料庫連接設定在一個初始檔案中；在使用這個檔案決定哪一個檔案是測試資料庫。你可能使用一個初始檔案作為測試之用（指向區域性的資料庫），而其他的初始檔案為產品資料庫所用（指向一個實際的資料庫。）</span></p>
+<p><font face="Arial"><span lang="zh-tw">在Java，一個初始檔案看起來像這樣：</span></font></p>
+<pre class="example-code"><font face="Arial" size="3">  myapp.db.url=jdbc:mysql://127.0.0.1/mydatabase</font>
+</pre>
+<p><span lang="zh-tw">這是一個連接資料庫的字串。你也可以加入第二個連接資料庫字串以界定測試資料庫：</span></p>
+<pre class="example-code"><font face="Arial" size="3">  myapp.db.url=jdbc:mysql://127.0.0.1/mydatabase
+  myapp.db.testurl=jdbc:mysql://127.0.0.1/my_test_database</font>
+</pre>
+<p><span lang="zh-tw">在測試程式碼中你可以增加檢查以確認你將只是連接到一個測試資料庫：</span></p>
+<pre class="example-code"> <font face="Arial" size="3"> public void dbSetUp()
+  {
+     String test_db = InitProperties.get("myapp.db.testurl");
+     String db = InitProperties.get("myapp.db.url");
+
+     if (test_db == null)
+       abort("<span lang="zh-tw">未設定資料庫 </span>");
+
+     if (test_db.equals(db))
+     {
+        //<span lang="zh-tw">全部正常：我們連接的資料庫是與設定為『測試用』的相同。</span> 
+
+     }
+     else
+     {
+        abort("<span lang="zh-tw">將不會執行測試於一個非測試用的資料庫。</span>");
+     }
+  }</font>
+</pre>
+<p><span lang="zh-tw">另一個技巧：如果你有一個區域性資料庫，測試可以檢查要執行資料庫的IP或主機名稱，如果不是區域<font face="Arial">名稱/127.0.0.1很可能你要執行的資料庫是實際的資料庫。</font></span></p>
+<h2><span lang="zh-tw"><a name="結論">結論</a></span>Conclusions</h2>
+<p><span lang="zh-tw">在此筆記當中我嘗試說明的是：</span></p>
+<ul>
+  <li><span lang="zh-tw">資料庫程式碼的單元測試是值得做的；</span></li>
+  <li><span lang="zh-tw">如果你願意讓你的測試系列<font face="Arial">(suit)本身有一個資料庫；</font>你可以很輕鬆的執行測試。</span></li>
+</ul>
+<p>　</p>
+<p><span lang="zh-tw">這個問題還有他的解決方式<font face="Arial">。在模擬物件<a href="#Mock">(mock 
+objects(參閱：資源))</a>
+我尚未有充分的信心。據我所知的模擬物件，你模擬(simulate)系統的一個層（在這個案例中是RDBMS），因此你的模擬資料庫總是傳回以所期望的。我喜歡聽到這個聲音：它鼓勵你安排(layer)你的測試，可能是經由使用一個測試的SQL層組(SQL-level
+ set)，然後使用一個Java層組(Java-level set)於模擬ResultSet物件上執行工作。</font></span></p>
+<p><span lang="zh-tw">我考慮的只是一些動作可以導致於一兩個表格之中的變動，而於此觀點模擬物件<font face="Arial">/</font>模擬可能變成痛苦的維護及實作。同時；當然，我將需要找尋一個好的方法測試資料庫的<font face="Arial">SQL層：記住，我要確認資料是真正適當的存在於資料庫之中。</font></span></p>
+<h2><span lang="zh-tw"><a name="註釋">註釋</a></span>Comments</h2>
+<p><span lang="zh-tw">我一直在找尋更好的資料庫程式碼測試方法。如果你有任何想法，或任何評論請email給我(</span><a href="mailto:dbtest@dallaway.com?subject=Database+unit+testing">dbtest@dallaway.com</a><span lang="zh-tw">)或使用<a href="http://www.dallaway.com/cgi-bin/xmlboardsolo.cgi?board=dbunit&amp;action=index">討論區</a>。</span></p>
+<h2><span lang="zh-tw"><a name="測試日期的相關說明">測試日期的相關說明</a></span>A note on testing dates</h2>
+<p><span lang="zh-tw">如果你儲存日期資訊；你可能要去確認你所儲存的是正確的日期。你要認知到一些議題。</span></p>
+<p><span lang="zh-tw">
+首先，問問你自己是誰建立日期？如果是你的程式碼，那還好；因為當你檢視資料庫時你能夠比對你建立的及你取回的日期。如果是資料庫建立的日期；可能是預設值，那麼你可能會有一些問題。例如：你是否確認你的程式碼的時間範圍<font face="Arial">(timezone)與資料庫的時間範圍是一致的？當資料庫在GMT/UTC中執行時這是常常聽到的。你是否確認你執行的機器上的時鐘是與設定在資料庫上的時間是一致的？若否，當你比對時間時你將有一些時間差的錯誤(</font></span><font face="Arial">margin 
+of error</font><span lang="zh-tw"><font face="Arial">)。</font></span></p>
+<p><span lang="zh-tw">如果你存在這種情況時有些事情是你可以做的：</span></p>
+<ul>
+  <li><span lang="zh-tw">如果你知道要使用時間範圍，測試前把所有日期編排成單一時間範圍。這將清除任何『偏移幾小時<font face="Arial">(offset 
+  by hours)』的問題。</font></span></li>
+  <li><span lang="zh-tw"><font face="Arial">
+  允許比對日期的時間差的錯誤：可能是幾分鐘、幾小時或幾月任一邊。這聽起來不可思議，但至少可以抓到搜尋結果是空值或1970-01-01的錯誤。</font></span></li>
+</ul>
+<p>　</p>
+<h2><span lang="zh-tw"><a name="資源">資源</a></span>Resources</h2>
+<ul>
+  <li class="resource">
+  <a href="http://www.dallaway.com/acad/junit-yahoo-db.html">Related threads 
+  from the JUnit mailing list</a> </li>
+</ul>
+<blockquote>
+  <p><font face="Arial"><span lang="zh-tw">
+  在Yahoo!中的討論區偶而有討論到資料庫的單元測試，我在其中找到一些相當有用的討論。</span></font></p>
+</blockquote>
+<ul>
+  <li class="resource"><a href="http://www.junit.org/" name="junit.org">junit.org: Testing 
+  Resources for Extreme Programming</a> <br>
+  <font face="Arial"><span lang="zh-tw">Java JUnit的首頁</span></font></li>
+</ul>
+<ul>
+  <li class="resource">
+  <a href="http://www.xprogramming.com/software.htm" name="testing">Testing Framework software for download
+  </a> <br>
+  <span lang="zh-tw">包含許多語言的測試框架</span></li>
+</ul>
+<ul>
+  <li class="resource"><a href="http://www.extremeprogramming.org/change.html">A 
+  Change in the Way We Program</a> <br>
+  <font face="Arial">單元測試是XP中的一部份。你可以找到許多關於XP的文章，主要有改變我們程式設計的方式相關的文章，包括extremeprogramming.org及 <a href="http://www.xprogramming.com/">
+  xprogramming.com</a> 。</font></li>
+</ul>
+<ul>
+  <li class="resource"><a href="http://jxunit.sourceforge.net/">JXUnit: Building 
+  Suites of Test Data with XML</a> <br>
+  <font face="Arial">一個資源鍛造的專案；在JUnit中建構以儲存資料成為XML檔案，並保存資料於測試碼之外。看起來好像是不錯的概念，但我尚未嘗試。</font></li>
+</ul>
+<ul>
+  <li class="resource">
+  <a href="http://jakarta.apache.org/commons/cactus/index.html">Cactus</a> <br>
+  <font face="Arial">一個Apache Jakarta專案，擴充JUnit以測試一個MVC架構...使用servlets，這是我想像的。我需要更進一步看看這個專案.....</font></li>
+</ul>
+<ul>
+  <li class="resource">
+  <a href="http://www.objectmentor.com/publications/Working%20Backwards.pdf" name="Mock">Working backwards (PDF)</a> <br>
+  <font face="Arial">James Newkirk, Robert C. Martin.<a href="http://www.amazon.co.uk/exec/obidos/ASIN/0201709376/richarddallaway">Extreme Programming in Practice (Amazon UK)</a>.的第10章的草稿(pp.91-106)。其中討論使用模擬物件測試特定的資料庫功能。你也可以參考Tim Mackinnon, Steve 
+  Freeman and Philip Craig.所寫的 <a href="http://www.sidewize.com/company/mockobjects.pdf">
+  Endo-Testing: Unit Testing with Mock Objects</a> (PDF)。</font></li>
+</ul>
+<ul>
+  <li class="resource">
+  <a href="http://www.dallaway.com/reading/archive/extremeprog.xml">Extreme 
+  Programming Explained</a> (book) <br>
+  <font face="Arial">介紹XP。</font></li>
+</ul>
+<ul>
+  <li class="resource"><a href="http://www.dallaway.com/jsptest">JSPTest</a> <br>
+  <font face="Arial">我的類別可以在JSPs上執行單元測試，你可以使用這些程式碼測試網頁提交到資料庫的結果。</font></li>
+</ul>
+<ul>
+  <li class="resource"><a href="http://www.cvshome.org/" name="CVS">CVS: Concurrent 
+  Versions System</a> <br>
+  <span lang="zh-tw">資源控制</span></li>
+</ul>
+<ul>
+  <li class="resource">
+  <a href="http://developer.java.sun.com/developer/technicalArticles/J2EE/testinfect/">
+  Test Infect Your Enterprise JavaBeans</a> <br>
+  <span lang="zh-tw">於應用程式伺服器執行測試的議題。</span></li>
+</ul>
+<ul>
+  <li class="resource">
+  <a href="http://www.mockobjects.com/papers/jdbc_testfirst.html">Developing 
+  JDBC applications test-first </a><br>
+  <font face="Arial">Steve Freeman的論文關於如何測試以JDBC為基礎的應用程式而無須使用資料庫。同時也可以參考後續從<a href="http://www.dallaway.com/acad/junit-yahoo-db.html">JUnit mailing list</a>收集的訊息。</font></li>
+</ul>
+<p class="lastmod"><font face="Arial">原文最後更新日期：Wednesday, 26-Sep-2001 09:19:05 BST
+</font> </p>
+
+<p class="lastmod"><span lang="zh-tw"><font face="Arial">譯文最後更新日期：<!--webbot bot="Timestamp" S-Type="EDITED" S-Format="%Y/%m/%d" startspan -->2002/01/29<!--webbot bot="Timestamp" i-checksum="12342" endspan --></font></span></p>
+
+</body></html>

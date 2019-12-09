@@ -1,0 +1,237 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>Spindle</TITLE>
+		<META name="keywords" content="spindle, lucene, jsp, text search, indexing, index, swish, swish-e, search, java, servlet">
+		<META name="description" content="Spindle (with Lucene) is a good web site search tool">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../index.html">Writing</a> - Spindle</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+
+<h1>Spindle</h1>
+
+
+<p>
+I switch a few site searches over from using a <a href="http://swish-e.org/">Swish-e</a> CGI to using a Java-based packaged
+called <a href="http://www.bitmechanic.com/projects/spindle/">Spindle</a>.  These are my notes.  The summary is: it works very well.
+</p>
+
+<p><b>Contents</b></p>
+
+<table>
+<tr>
+<td valign="top">
+<ul>
+	<li> <a href="#intro">Introduction</a>
+	<li> <a href="#index">Indexing</a>
+	<li> <a href="#search">Searching</a>
+	<li> <a href="#myHacks">My hacks</a>
+	<li> <a href="#conc">Conclusions</a>
+	<li> <a href="#resources">Resources</a>
+
+</ul>
+</td>
+<td width="50px">&nbsp;</td>
+<td valign="top" align="middle">
+<script type="text/javascript"><!--
+google_ad_client = "pub-7754260355934493";
+google_ad_width = 250;
+google_ad_height = 250;
+google_ad_format = "250x250_as";
+google_ad_channel ="3686166658";
+google_color_border = "CCCCCC";
+google_color_bg = "FFFFFF";
+google_color_link = "000000";
+google_color_url = "666666";
+google_color_text = "333333";
+//--></script>
+<script type="text/javascript"
+  src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</td>
+</tr>
+</table>
+
+
+<p>Original: July 2002.  This version: $Id: index.html,v 1.6 2004/06/20 21:34:51 richard Exp $</p>
+
+
+<hr />
+
+<a name="intro"><h1>Introduction</h1></a>
+
+<p>
+My needs for site search are pretty simple: a fast indexing tool to scan a web site; and a fast search tool that will find relevant stuff.
+</p>
+
+<p>
+Swish-e is a C-based lump of code plus a bit of Perl to do the site crawling. It works fine, but I've found it gets a bit slow.  Also, the CGI architecture for performing the search doesn't scale too well, and I wasn't in the mood for fixing it. </p>
+
+<p>
+<a href="http://jakarta.apache.org/lucene/">Lucene</a> has been around for a while as an indexing tool but I've ignored it because in my day job I need multilingual search, and Lucene doesn't have stemmers for many languages -- not yet, check regularly because they are adding more.  However, for a couple of personal web sites, I didn't need anything other than English, so I decided to try Lucene.</p>
+
+<p>To make life easier, <a href="http://www.bitmechanic.com/">Bitmechanic</a> have wrapped Lucene with a web crawler and called the package Spindle. I installed version 0.90 (dated 2002-03-30)....</p>
+
+
+<a name="index"><h1>Indexing</h1></a>
+
+<p>The first step with Spindle is to create an index.  I downloaded and installed the Spindle JAR files on a Linux server and used this script ("spindle") to fire off the indexing:</p>
+
+<pre class="example-code">
+#!/bin/sh
+# spindle -- Runs the spindle HTTP spider to index a site
+
+SPINDLE=~/local/spindle-0.90
+
+CLASSPATH=$SPINDLE/lib/spindle.jar:$SPINDLE/lib/lucene-1.2-rc4.jar:$SPINDLE/lib/jsse.jar
+java -cp $CLASSPATH com.bitmechanic.spindle.Spider "$@"
+</pre>
+
+<p>Note that contrary to the documentation you do need <code>jsse.jar</code> for indexing (at least you do with JDK 1.3).  You can download this jar from the <a href="http://java.sun.com/products/jsse/">Java Secure Socket Extension</a> site.</p>
+
+<p>The command to index this very site is:  <code>
+spindle -u http://www.dallaway.com/ -d /home/richard/html/dallaway/spindle/ -e .cgi -e .jar -e .zip -e /comment -v -dt p -dt span -dt h1 -n
+</code></p>
+
+<p>In summary this says: search www.dallaway.com, storing the index in the "spindle" directory, ignoring any .cgi, .jar or .zip files, oh, and be verbose about it. 
+ I'll explain the other command line arguments later, in the section on <a href="#myHacks">my hacks</a>.</p>
+
+<p>Having been use to Swish-e, when I ran my first site index I was expecting the indexing to be complete in an hour or so. What I saw was this: <code>Indexed 1047 URLs (2546 KB) in 137 seconds</code>.  That's fast... take my word for it.  Probably the main parameter to use to adjust the performance is the number of threads for crawling (the default, which I used, is 2). </p>
+
+<p>Having a built an index, you'll want to manually see what's in it from the command line.  Here's the script I use ("search"):</p>
+
+<pre class="example-code">
+#!/bin/sh
+
+SPINDLE=~/local/spindle-0.90
+
+CLASSPATH=$SPINDLE/lib/spindle.jar:$SPINDLE/lib/lucene-1.2-rc4.jar:$SPINDLE/lib/jsse.jar:~/local/listlib-0.91/lib/listlib.jar
+java -cp $CLASSPATH com.bitmechanic.spindle.Search "$@"
+</pre>
+
+<p>The documentation doesn't mention that you also need Bitmechanic's listlib library on the classpath, but I found that I did need it.</p>
+
+<p>The above script allows you to search the index using a Lucine search phrase.  For example, to search the index for the word "auction":</p>
+
+<pre class="example-code">
+$./search /home/richard/html/dallaway/spindle auction
+http://www.dallaway.com/acad/cbd/; Title: Outsourced component development; Score: 0.21613583
+Description: Outsourced component development Late in 1999 I was asked to develop a small Java applet for a colleague who was working on a bigger project for a client.
+This wasn't something I was really interested in and nor was it my speciality, but I thought it
+would
+http://www.dallaway.com/acad/index.html; Title: Writing; Score: 0.213919
+Description: Things I have written down My notes on getting going with Java Web Start for deploying applications over the internet, and learning how to digitally sign code on the cheap. My first attempt at commissioning some code development via an internet auction. My
+</pre>
+
+<p>Two results, showing the page, the title, the score and the description (summary) of the page.</p>
+
+
+<a name="search"><h1>Searching</h1></a>
+
+<p>To provide this search functionality on the web it's just a matter of changing the JSP that comes with Spindle.  It'd probably be better to write a servlet or struts action that forwards to a display JSP, for proper MVC, but the single JSP works fine for me on the small web sites where I'm using Spindle.</p>
+
+<p>
+To deploy the JSP, you need to have <code>commons-beanutils.jar</code>, <code>lucene-1.2-rc4.jar</code>, <code>listlib.jar</code> and <code>spindle.jar</code> in WEB-INF/lib, and also you need to deploy <code>WEB-INF/listlib.tld</code>.  These all come in the Spindle and/or listlib distributions from Bitmechanic.  Later version of Lucene will probably work, but I've not tried them out yet.
+</p>
+
+<p>
+The index is set in the top of the JSP:  </p>
+
+<pre class="example-code">
+
+&lt;jsp:setProperty name="search" property="dir"
+                   value="/home/richard/html/dallaway/spindle"/&gt;
+
+</pre>
+
+<p>And that's pretty much it. You can try the searching by using the "Find" box at the top of this page.</p>
+
+
+
+
+<a name="myHacks"><h1>My hacks</h1></a>
+
+<p>I've made five changes to the Spindle distribution:</p>
+
+<ul>
+
+<li>
+ Out-of-the-box I found that Spindle's summary of a page often included chunks of Javascript.  That's because it just takes any text it finds as the description.  I didn't like that, so I modified the indexing code.
+  I've added a new command line argument to the indexer: <code>-dt</code> (for "description tag").  This option allows you to specify which tags in the HTML should be considered for the description.  In the example above I said: <code>-dt p -dt span -dt h1</code>, meaning take the description only from the <code>&lt;p&gt;</code>, <code>&lt;span&gt;</code> or <code>&lt;h1&gt;</code> tags.</li>
+
+<li>
+ Some of the documents on the sites I index contain many subsections.  An example is a blog, made up of 
+ entries for each day. When you search for an entry, the description you see is from the start of the page,
+ not from the relevant entry. That is, although the search match might be to 
+ the last blog entry on the page, the search results show text
+ from the start of the page. I've changed that so that each entry on a page appears independently in the index.  
+ Here's how:  each entry on my pages is marked by an  <code>&lt;a name='...'&gt;</code>  tag, so
+ I've modified Spindle so that it splits documents (in the index) based on the presence of <code>&lt;a name='...'&gt;</code> tags.
+ You activate this with the <code>-n</code> option to Spider.</li>
+ 
+ 
+<li>I've also fixed one of the features/bugs: Spindle ignores pages that have a mime type that includes
+a character encoding.  My hacked version fixes this. </li>
+
+<li>There was a minor deviation from the servlet specification in listlib, which showed itself in Tomcat 5.0.19 
+as the error message <code>ListContainer cannot be applied to ()</code>. The source code change is in <a href="ListContainer.java">ListContainer.java</a>.</li>
+
+<li>Spindle uses David McNicol's HTMLParser library, which contained a small bug in the handling of HTML attributes.  This distribution
+includes a fix for this in the <code>TagToken.java</code> file.
+</li>
+</ul>
+
+<p>You can download the modified source of 
+<a href="Spider.java">Spider.java</a>, <a href="ListContainer.java">ListContainer.java</a> and <a href="TagToken.java">TagToken.java</a>, or you can download 
+a drop-in replacement for <a href="spindle.jar">spindle.jar and listlib.jar</a> (this is built for 
+spindle 0.90 using JDK 1.4).  Note that this version of <code>spindle.jar</code> includes listlib, so replace your copy 
+of <code>spindle.jar</code> with this version and remove your copy of <code>listlib.jar</code>.
+</p>
+
+
+<a name="conc"><h1>Conclusions</h1></a>
+
+<p>Lucene works and is shocking fast.  Spindle makes it (almost) out-of-the-box no-brainer for web site search.  However, check with the Lucene project because they are working on developing something with will replace Spindle,
+as Spindle does not seem to be actively developed and contains a few bugs.  </p>
+
+
+<a name="resources"><h1>Resources</h1></a>
+
+<ol>
+
+<li> Lucene home page.  Good for docs on how to search. <br />
+<a href="http://jakarta.apache.org/lucene/docs/index.html">http://jakarta.apache.org/lucene/docs/index.html</a> </li>
+
+
+<li> Lucene application extensions.  The plan to replace Spindle. <br />
+<a href="http://jakarta.apache.org/lucene/docs/luceneplan.html">http://jakarta.apache.org/lucene/docs/luceneplan.html</a> </li>
+
+
+<li> Spindle home page. <br />
+<a href="http://www.bitmechanic.com/projects/spindle/">http://www.bitmechanic.com/projects/spindle/</a> </li>
+
+
+<li> Listlib home page. <br/>
+<a href="http://www.bitmechanic.com/projects/taglib/listlib/">http://www.bitmechanic.com/projects/taglib/listlib/</a></li>
+
+<li> Jakara Newsletter. Good for keeping up to date with the various Apache Jakarta projects. <br/>
+<a href="http://jakarta.apache.org/site/news/">http://jakarta.apache.org/site/news/</a> </li>
+
+</ol>
+
+
+<!--#include virtual="/footer.html" -->
+
+</BODY>
+</HTML>

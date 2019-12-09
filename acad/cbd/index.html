@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>Outsourced component development</TITLE>
+		<META name="keywords" content="flashline, cdb, components by design, beans, outsource, development, auction">
+		<META name="description" content="My experience of having a a Java software component developed through an auction">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../index.html">Writing</a> - Outsourced component development</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+
+<h1>Outsourced component development</h1>
+
+<p>
+Late in 1999 I was asked to develop a small Java applet for a colleague who was working on a bigger project for a client.
+This wasn't something I was really interested in and nor was it my speciality, but I thought it
+would be a good opportunity to commission the work via an internet auction. I'd spec and submit a proposal, developers
+would bid for the work, the work would get done by the best person for the job....everyone would be happy.  This was
+supposed to be the model for future development (circa 1999), so I thought I may as well get my feet wet.</p>
+
+<p>
+It sort of worked.  I made some mistakes in my role as the customer, and in the end the development wasn't deployed.  These are my notes on the experience.
+</p>
+
+<p><b>Contents</b></p>
+
+<ul>
+	<li> <a href="#spec">The specification</a>
+	<li> <a href="#bidding">Bids</a>
+	<li> <a href="#pick">Selecting a winning bid</a>
+	<li> <a href="#delivery">Code delivery, bug fixing and other nightmares</a>
+	<li> <a href="#conc">Conclusions</a>
+	<li> <a href="#resources">Resources</a>
+
+</ul>
+
+<p>Original: November 2001.  This version: $Revision: 1.2 $ $Date: 2003/08/04 08:13:09 $</p>
+
+
+<h2><a name="spec">The specification</a></h2>
+
+<p>I decided to use the Components By Design service on Flashline.com.  This service doesn't appear to exist anymore, and
+Flashline have moved on to other things.  From memory, the process worked as follows:
+
+<ol>
+<li> As a customer, I'd register and submit a proposal;
+<li> Developers would look at my proposal and post questions;
+<li> I'd answer any questions;
+<li> Developers then bid for the work;
+<li> I select the bid I prefer after looking at the price and some details about the developer;
+<li> The developer does the work; and then
+<li> I pay the developer.
+</ol>
+
+<p>As this was my first time using the Flashline service, they waived the US$100 fee I'd normally be expected to pay.</p>
+
+<p>My proposal was:</p>
+
+<div class="longquote">
+<p>
+Vertical Textbox Applet
+</p>
+<p>
+An entertainment web site wishes to have a type-in text search box running vertically up the screen (i.e., a regular textbox with submit button, but rotated 90 degrees anticolockwise -- see <a href="textbox.gif">additional GIF image showing an example)</a>.
+</p>
+<p>
+A user will be able to type text into the text box, and when the user clicks the button or hits RETURN, the text will be submitted to a CGI for processing.  The applet itself would not have to perform any searching or maintain text indices.  The user should be able to delete text in the text box, but the following are NOT core requirements: cut and paste, scrolling beyond the end/top of the text area.  An insertion point (cursor) is desirable, but not essential.
+</p>
+<p>
+The applet should be configurable in terms of length, width, colours via the usual &lt;PARAM&gt; settings.  A <a href="applet.txt">sample configuration is supplied</a> together with <a href="layout.gif">a diagram showing the interpretation of the settings</a>.
+</p>
+<p>
+We would like to be able to change the face and size of the font.  Ideally, this should be a font of our choosing (we can supply AFM files).  If this is not possible, the standard Java fonts will be fine.
+</p>
+<p>
+The applet should run on the widest possible selection of browsers and operating systems, including Netscape 3, IE 3 and up and MacOS, Windows 9x, Windows NT.  This means it will be a JDK 1 application, with no use of JDK 1.2 features.
+</p>
+</div>
+
+
+<p>Yes, it was an insane feature to put on a site.  The web site in question
+has since been closed. </p>
+
+
+<h2><a name="bidding">The bidding process</a></h2>
+
+
+<P>
+The question and answers review period ran until end of October 1999.  Bidding was to be completed
+by 5 November 1999, and the scheduled delivery date was for the end of November 1999.  So start to end was planned  to be around six weeks.</p>
+
+<p>At the end of the bidding process I had received eight bids.  These bids were from independents and small organizations  in the USA, Canada, India and Russia, with an average of 2.5 years of Java experience and up to 10 years of C experience.  The bids  themselves ranged from US$150 to US$5000.</p>
+
+<img src="bids.gif" alt="Range of bids" width="457" height="215" />
+
+<p>
+By way of an example of the kinds of information presented to me, here are the details of the developer who submitted the winning bid (I've removed some identifying details):</p>
+
+<table border="0" style="font-size: 8pt; margin-left: 6pt">
+	<tr>
+		<td valign="top">Location</td><td>UNITED STATES</td>
+	</tr>
+	<tr>
+		<td valign="top">Technical Expertise</td>
+		<td> JDK 1.0.2 TO JDK1.2 (Smalltalk Background) Bean Development, Micro Code components, AWT Expertise, Author of patented World's smallest HTML Renderer</td>
+	</tr>
+	<tr>
+		<td valign="top">Spoken Languages</td><td>English</td>
+	</tr>
+
+	<tr>
+		<td  valign="top" colspan="2">Experience</td>
+	</tr>
+
+	<tr>
+	<td valign="top">C++</td>
+	<td valign="top"> Experience: 3 years
+		<br />Target Platform: Win 3.11 wfw, Ultrix
+		<br> Class Libraries:
+		<br /> Number of Developers: 1
+	</td>
+	</tr>
+
+	<tr valign="top">
+	<td valign="top">Java </td>
+	<td valign="top"> Experience: 3 years <br/>
+		Target Platform: Win 9x/NT, Linux <br/>
+		 Number of Developers: 3 <br />
+	</td>
+	</tr>
+
+	<tr>
+	<td valign="top">Smalltalk </td>
+	<td valign="top"> Experience: 2years <br/>
+		Target Platform: Win9x/NT<br/>
+		Number of Developers: 4
+	</td>
+	</tr>
+
+	<tr>
+	<td valign="top">Databases </td>
+	<td valign="top"> Experience: 3 years<br />
+		Databases: DB/2, SQLServer <br />
+ 		Number of Developers: 4 <br />
+ 	</td>
+ 	</tr>
+ </table>
+
+
+<p>I was also given a means to contact the developer via an anonymous email system.</p>
+
+<p>When developers sent in bids, they could also add comments.  The winning bid was:</p>
+
+<div style="font-size: 8pt; margin-left: 6pt">
+Bid Amount $395.00 USD<br />
+Developer Comments:  Hi Richard, I am making my bid based on the estimates that were given to me by our Java developer. [I was also informed there will be more work involved in making sure this applet works on all the browsers but the bid amount includes billing for that time] We will provide: Full Source Code, Complete Documentation including javadocs, Installation guide, Bug fixes for 14 days, Tech support for one month, And a License that will give you the right to modify/resell the finished product, or any parts of it. Thanks, [name and email address removed]
+<br />
+</div>
+
+<h2><a name="pick">Selecting the winning bid</a></h2>
+
+<p>Why did I select that bid?  All the CVs looked reasonable, but I had no way to verify the contents of the CVs.  The US$150 bid was suspiciously low, and the US$5000 bid was suspiciously high, but the others were all reasonable.  The thing that clinched it was that two of the developers contacted me via the anonymous mail system to point me at URLs where I could see a working demo version of what I'd asked for.  I selected the one that looked most complete, because it gave me the confidence that the developer could complete the work.</p>
+
+<p>This seems like a pretty amazing situation to be in: 8 developers bidding for work, two of which actually started the work to prove they can do the job. </p>
+
+<p>I pressed the "accept bid" button on the Flashline site, and that was that.  In email conversations with the developer we agreed a schedule for delivery.  I failed to agree an acceptance criteria (big mistake) or the starting date of the promised tech support and bug fixing days.
+</p>
+
+
+<h2><a name="delivery">Code delivery, bug fixing and other nightmares</a></h2>
+
+<p>Code was delivered.  There was a small back-and-forth with the developer on making sure some of the features worked, but this was fairly painless.  I passed the code on to my colleague who passed it on to the client.</p>
+
+<p>Time passed.</p>
+
+
+<p>The colleague who had commissioned the work with me had extracted himself from the project and shortly after went out of business.  Rather than just duck out at this point, I thought the right thing to do was to see this part of the project through, so I established contact with the client to see how they were getting on with the applet.  Of course, they hadn't even looked at it.
+</p>
+
+<p>More time passed.  The developer was starting to make noises about being paid -- quite reasonably.  To reduce currency charges I decided I would pay the whole amount on acceptance from the client.  The client acceptance wasn't coming through.  I decided to take the risk and pay the developer.</p>
+
+<p>About a week after paying the developer, the client calls me to talk about problems with the applet.  I passed the questions on to the developer and heard nothing back.  Absolute silence.  This is you're basic outsourcing nightmare.  It's not clear exactly what I could do in that situation (other than not get into the situation in the first place).
+</p>
+
+<p>To cut a long story short, I was able to decompile the applet, fix the bugs, and pass it back to the client (the source code I was supplied by the developer did not match the decompiled "final" binary I was sent!).  The client web site redesign that was to incorporate the applet never happened, and so the applet never saw the light of day.</p>
+
+
+<h2><a name="conc">Conclusions</a></h2>
+
+<p>Would I use a service like Flashline CBD again?  Absolutely.  It was a great way to get some work done at a fine price.  I wouldn't do things the same, for a start....</p>
+
+<ol>
+ <li> I'd asked for references and call the referees.
+ <li> Having a bid include a working prototype gives you a great amount of reassurance that you'll get something, but remember that it's the final details that can really hurt (in this case, testing on many browsers).
+ <li> I'd plan for staged payments to the developer, or have the payment placed in escrow.
+ <li> I'd confirm the start dates for any support agreements.
+ <li> I'd need to have source code more often, and I'd test the ability to
+ 	  build the source.
+ <li> I'd require (and probably specify) test scripts.
+ <li> I'd confirm acceptance procedures.
+ <li> Agree the license of what you're paying for.
+ <li> Test, test, test, test.
+<li> Remeber that sometimes things are cheap for a reason,
+ and with hindsight the US$5000 bid looks like it could have been good value.
+</ol>
+
+<p>For a developer it's pretty tough to convince someone that you're the person for the job.  Doing the work up-front before you win the bid is high risk, unless you happen to have the code already.  From my experience, that alone would not make me accept the bid.  A very low price isn't a big motivator either. I need to be convinced that the developer will do a great job and will see the work through, fixing that last 20% of detail that takes 80% of the time.</p>
+
+
+<p>If you want to buy or rent a vertical text applet, do <a href="/contact">get in touch</a>.</p>
+
+
+<h2><a name="resources">Resources</a></h2>
+
+<ul>
+
+<li> At the time of writing, the <a href="http://www.flashline.com/components/developers/view.jsp?sid=1006258519250-3642952301-50&rfqid=1098">original spec plus the questions and answers</a> are still available on
+the Flashline web site.
+
+</ul>
+
+
+
+
+<!--#include virtual="/footer.html" -->
+
+</BODY>
+</HTML>

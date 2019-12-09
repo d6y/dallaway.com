@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-15">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.0.2  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Richard Dallaway">
+	<META NAME="CREATED" CONTENT="20021203;17453000">
+	<META NAME="CHANGEDBY" CONTENT="Richard Dallaway">
+	<META NAME="CHANGED" CONTENT="20030217;11310400">
+	<STYLE>
+	<!--
+		@page { margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		P.western { font-family: "Times New Roman"; font-size: 10pt }
+	-->
+	</STYLE>
+	<LINK TITLE="House Style" REL=STYLESHEET HREF="../../layout.css" TYPE="text/css">
+	
+</HEAD>
+<BODY LANG="en-US" BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH S§EARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../index.html">Writing</a> - DTDs and Catalogs</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>DTDs
+and XML Catalogs</B></FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm"><A HREF="/contact">Richard Dallaway</A><BR>December
+2002</P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">From my current
+perspective as a developer who has to process XML documents and store
+them in a database, DTDs mostly just cause me pain.  In working out
+some of the issues I now know that half of the problem was a
+misunderstanding about DTDs.   The other half of the problem was
+solved by learning about XML catalogs and how to us them with JAXP
+(Xerces, in fact) and Java (JDK 1.4).  These are my notes on the
+experience.</P>
+
+
+<P CLASS="western" STYLE="margin-bottom: 0.2cm"><FONT SIZE=2 STYLE="font-size: 9pt"><i>Modified:</i>
+<br>
+<BR>2004-12-01:
+Added notes on SAX; fixed broken link (thanks to Richard Tesh for reporting this); added link to useful XML articles;
+updated text to reflect the new Apache Commons home of resolver code; added note on Saxon (thanks to Paul Goulbourn).
+<BR><BR>2003-02-16:
+Added notes on XSL-T.</FONT></P>
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>The
+problems I was having with DTDs</B></FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">In the task I'm
+currently working on, I receive XML documents, extract a few
+attributes, and then store the whole document in a database.  A web
+application reads the XML out of the database and makes use of it.</P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">You would think that
+a DTD would make life easier for me: the DTD lays out the rules for
+the XML, guaranteeing that certain attributes or nodes will be
+available.  If the XML I'm processing doesn't validate against these
+rules, I can reject the document.   However:</P>
+<OL>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0.2cm">I don't supply
+	the DTD as it's specified in the XML document.  So the sender could
+	change the DTD or point to a different DTD completely.  Where's my
+	control?</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0.2cm">One of the
+	servers involved in processing the XML is behind a firewall and
+	can't see out to the Internet.  How can I get at the DTD to use it? 
+	I can't just ignore it because it might contain important entity
+	definitions.  Even if I could connect to get the DTD, that's an
+	expensive operation each time I want to parse a document.</P>
+</OL>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">These issues can be
+resolved.  The control comes from understanding the public identifier
+part of a doctype.  The second point is fixed by using XML catalogs.</P>
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>Public
+identifiers</B></FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">Take a look at this
+document type definition from an XML document:</P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt">&lt;!DOCTYPE
+svg PUBLIC &quot;-//W3C//DTD SVG
+20001102//EN&quot;<BR>	&quot;http://www.w3.org/TR/2000/CR-SVG-20001102/DTD/svg-20001102.dtd&quot;
+&gt;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">The <FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">-//W3C//DTD
+SVG 20001102//EN</FONT></FONT> part is the public identifier and the
+<FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">http://...</FONT></FONT>
+part is the URI. I've typically let the parser use the URI part to
+fetch the DTD, which has caused me problems (either worries about the
+DTD changing or not being able to fetch the document).  It turns out
+that the URI is just hint for which DTD to use.  It all became clear
+on page 30 of <I>XML in a Nutshell</I> (see References):</P>
+<P CLASS="western" STYLE="margin-left: 0.98cm; margin-bottom: 0.2cm"><I>&ldquo;The
+name of the public ID uniquely identifies the XML application in use.
+ Generally a URI is also given as a backup in case the validator
+[parser] does not recognize the public ID. ... In practice, public
+IDs aren't used very often.  Almost all XML parsers rely on the URI
+to actually validate the document.&rdquo;</I></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">In other words the
+URI isn't the definitive place for the DTD: the ID is the important
+thing.  Most parsers use the URI, but it doesn't have to be that way.
+  So my first change to the application was to reject any public IDs
+that I don't recognize.  This makes the code less flexible in that if
+the ID changes, the code will reject the document.  Presumably,
+though, the public ID will only change if the interface described in
+the DTD changes.  I think that's a reasonable contract to assume.</P>
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>XML
+Catalogs</B></FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">The problem of how to
+access DTDs in a location-independent way is solved using XML
+Catalogs.   In summary, a catalog maps a public ID into some other
+resource.  Normal Walsh has a great write up on this (see References)
+which I recommend you read.  
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">For my specific
+application this meant mapping public IDs to .dtd files held in a JAR
+file (for deployment) or on my classpath (during development).  For
+every DTD I wanted to use, I made sure I had a local copy.  Then I
+just included Sun's <FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">resolver.jar</FONT></FONT>
+and modified my parsing code:</P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt">DocumentBuilderFactory
+factory =
+DocumentBuilderFactory.newInstance();<BR>factory.setValidating(true);
+// If you want DTD validation<BR>DocumentBuilder parser =
+factory.newDocumentBuilder();</FONT></FONT></P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt">//
+Start of catalog mapping magic:<BR>CatalogResolver resolver = new
+CatalogResolver();<BR>parser.setEntityResolver(resolver);<BR>// End
+of magic</FONT></FONT></P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt">Document
+dom = parser.parse(whatever...);</FONT></FONT></P>
+
+
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">The set up is pretty similar for SAX.  For the details 
+see Tom White's XML.com article (in <i>References</i>, below).
+</P>
+
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">A couple of files
+tell the resolver where to locate the DTDs.  First, the
+CatalogResolver implementation looks for a file called
+<FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">CatalogManager.properties</FONT></FONT>
+anywhere on your classpath.  Mine looks like this:</P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt">verbosity=4<BR>catalogs=./dtd/catalog.xml<BR>prefer=public<BR>static-catalog=yes<BR>relative-catalogs=no</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">...which more-or-less
+says &ldquo;the mappings are in ./dtd/catalog.xml&rdquo;.  That
+location is relative to wherever the <FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">CatalogManger.properties</FONT></FONT>
+file was found.</P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">The catalog itself
+looks like this:</P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt">&lt;catalog
+xmlns=&quot;urn:oasis:names:tc:entity:xmlns:xml:catalog&quot;&gt;<BR>&lt;public
+publicId=&quot;-//W3C//DTD SVG 20001102//EN&quot;<BR>       
+uri=&quot;external/svg-20001102.dtd&quot;/&gt;<BR>&lt;/catalog&gt;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">...which maps the
+public ID to a specific <FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">.dtd</FONT></FONT>
+file, the final location of which is relative to the location of
+<FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">catalog.xml</FONT></FONT>.
+In my case my source tree would look like this:</P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt">src/com/foo/baz/Blah.java...<BR>src/CatalogManager.properties<BR>src/dtd/catalog.xml<BR>src/dtd/external/svg-20001102.dtd</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">When I deployed my
+application, I made sure I included the <FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">CatalogMangager.properties</FONT></FONT>
+and the dtd folder in the JAR.</P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">And that's pretty
+much all there is to do: DTDs will be resolved from local files, and
+unrecognized DTDs can be rejected by comparing the public ID against
+the public IDs in the catalog. When parsing documents using the
+CatalogResolver, you'll see debugging output telling you that certain
+public IDs are being mapped to local files.    
+</P>
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>Summary</B></FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm">Public IDs are the
+important thing about DTDs.  Ignore the URIs by downloading the DTD
+and making use of an XML catalog, and in particular Sun's
+implementation of a catalog (<FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">resolver.jar</FONT></FONT>).  This
+implementation has now been blessed by moving to the Apache Common's project.
+</P>
+ 
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>A
+note about XSL-T</B></FONT></FONT></P>
+<P CLASS="western">The <FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">resover.jar</FONT></FONT>
+code can also be used in XSL transformations to locate included
+files.  Here's a code snippet to show how it's done:</P>
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm"><FONT FACE="Courier New"><FONT SIZE=2 STYLE="font-size: 9pt"><FONT COLOR="#000000">TransformerFactory</FONT>
+<FONT COLOR="#000000">factory</FONT> <FONT COLOR="#000000">=</FONT>
+<FONT COLOR="#000000">TransformerFactory.newInstance();<BR></FONT>//
+Start of  magic:<BR><FONT COLOR="#000000">CatalogResolver resolver =
+new CatalogResolver();<BR></FONT>factory<FONT COLOR="#000000">.setURIResolver(resolver);<BR></FONT>//
+End of magic<BR><FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New"><FONT COLOR="#000000">template</FONT>
+<FONT COLOR="#000000">= factory.newTemplates(whatever...);</FONT></FONT></FONT></FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0.2cm"><FONT FACE="Times New Roman"><FONT SIZE=2>With
+this in place <FONT SIZE=2 STYLE="font-size: 9pt"><FONT FACE="Courier New">&lt;xsl:import&gt;</FONT></FONT>
+tags read when creating the template will look to the catalog rules
+to locate xsl files.</FONT></FONT></P>
+
+
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>A
+note about Saxon</B></FONT></FONT></P>
+<P CLASS="western">Be aware there are a few system properties to set when using Saxon.  These
+are explained by <a href="http://www.goulbourn.com/2003/12/saxon-and-resolverjar.html">Paul Goulbourn</a>. 
+When you call setAttribute, the values you use may vary depending on the version
+of Saxon you use.  The following worked for me:</P>
+
+<P STYLE="margin-left: 0.5cm; margin-bottom: 0.2cm">
+<FONT FACE="Courier New" SIZE=2 STYLE="font-size: 9pt"  COLOR="#000000">
+transformerFactory.setAttribute(net.sf.saxon.FeatureKeys.SOURCE_PARSER_CLASS,"com.sun.resolver.tools.ResolvingXMLReader");<BR>
+transformerFactory.setAttribute(net.sf.saxon.FeatureKeys.STYLE_PARSER_CLASS, "com.sun.resolver.tools.ResolvingXMLReader");<BR>
+</FONT>
+</P>
+<P CLASS="western">If you're using the Apache Common's version of the resolver, you'll want
+to use <FONT FACE="Courier New" SIZE=2 STYLE="font-size: 9pt"  COLOR="#000000">org.apache.xml.resolver.tools.ResolvingXMLFilter</FONT>, of course.</P>
+
+
+
+
+
+
+
+
+<P STYLE="margin-top: 0.42cm; page-break-after: avoid"><A NAME="references"></A>
+<FONT FACE="Gill Sans MT"><FONT SIZE=2 STYLE="font-size: 11pt"><B>References</B></FONT></FONT></P>
+<UL>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0.2cm">Harold, E.R &amp;
+	Means, W. Scott <I>XML In A
+	Nutshell<BR></I><A HREF="http://www.dallaway.com/reading/archive/xmlnut.xml"><SPAN STYLE="font-style: normal">http://www.dallaway.com/reading/archive/xmlnut.xml</SPAN></A></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0.2cm"><SPAN STYLE="text-decoration: none"><SPAN STYLE="font-style: normal">Walsh,
+	Norman. </SPAN><I>XML Entity and URI Resolvers </I><SPAN STYLE="font-style: normal"><BR></SPAN></SPAN><A HREF="http://java.sun.com/webservices/docs/1.3/jaxb/catalog.html">http://java.sun.com/webservices/docs/1.3/jaxb/catalog.html/</A></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0.2cm"><SPAN STYLE="text-decoration: none">
+	<SPAN STYLE="font-style: normal">White, Tom. </SPAN><I>Using XML Catalogs with JAXP
+ </I><BR></SPAN></SPAN><A HREF="http://www.xml.com/lpt/a/2004/03/03/catalogs.html">http://www.xml.com/lpt/a/2004/03/03/catalogs.html</A></P>
+
+	<LI><P CLASS="western" STYLE="margin-bottom: 0.2cm"><SPAN STYLE="text-decoration: none">
+	<SPAN STYLE="font-style: normal">Apache Commons Resolver Project</SPAN><BR>
+	<A HREF="http://xml.apache.org/commons/components/resolver/">http://xml.apache.org/commons/components/resolver</A></P>
+
+
+
+</UL>
+
+<!--#include virtual="/footer.html" -->
+</BODY>
+</HTML>

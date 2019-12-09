@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>JSPTest - testing JSPs using JUNIT</TITLE>
+		<META name="keywords" content="test, testing, java, jsp, junit">
+		<META name="description" content="Simple Java classes to help test JSPs.">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../layout.css" TYPE="text/css">
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - JSP Test</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+<!-- Content -->
+
+<h1>Simple classes to help test JSPs</h1>
+<br><br>
+
+<p>JSP TEST is a collection of Java classes to help you test JSPs automatically.</p>
+
+<p>
+Download the latest version (release 6) <a href="downloads/jsptest_r6.zip">jsptest_r6.zip</a>
+(703k including source, docs and SSL libraries).
+</p>
+
+<blockquote>
+<p><b>Note:</b> Release 6 is a major change over release 5 (the
+previous version is still available as <a href="downloads/jsptest_r5.zip">jsptest_r5.zip</a>).  
+I've replaced all the 
+internal HTTP client calls with calls to <a href="http://jakarta.apache.org/commons/httpclient/">Apache's HTTP Client</a> code.
+The reason for this change is that Apache's code is a much more complete implementation of the HTTP protocol. 
+<br/>
+The
+downside is that JSP Test is now just a wrapper for Apache's code, and the JSP code is a bit of a mess because
+I've tried hard to not change the API from release 5.   In making the changes I discovered a bunch of assumptions
+I'd made regarding cookies and headers. I've left the assumptions in because changing the assumptions would
+break compatibility with previous releases of JSP Test. 
+<br/>  
+If you like the JSP Test API, then carry on using it.  If you want to get more sophisticated I suggest
+you use the Apache HTTP Client API directly. 
+
+</blockquote>
+
+<p>
+The classes run independently of any JSP servlet engine or web server because all they do is make HTTP
+requests, maintains cookies and stores the results of a request.
+You should use these classes with your favourite testing environment.
+I use <a href="http://www.junit.org">JUnit</a>.
+</p>
+
+<p>
+A related project is Russell Gold's <a href="http://httpunit.sourceforge.net/">HTTPUnit</a> at Sourceforge.
+I've not tried it properly yet, but HTTPUnit looks much more feature-rich than JSPTest, but is  correspondingly
+more complex.
+</p>
+
+<p>
+If you want to test a servlet from inside (rather than just the results it produces), try
+Apache's <a href="http://jakarta.apache.org/cactus/">Cactus</a> project.
+</p>
+
+<p>
+Possibly of interest: I've written up some <a href="/acad/dbunit.html">notes on unit testing database functionality</a>.
+</p>
+
+<p>
+Also on this page:
+<ul>
+<li> <a href="#bg">Background</a>
+<li> <a href="#faq">FAQ</a>
+<li> <a href="#examples">Examples</a>
+<li> <a href="#contact">Feedback</a>
+<li> <a href="#list">Announcements mailing list</a>
+<li> <a href="#changes">Change history</a>
+</ul>
+</p>
+
+<h1><a name="bg">Background</a></h1>
+<p>
+The idea is that you can automatically run a suit of tests and be confident
+that your web site's logic is correct after any changes you make to code.  An easy
+way to do this is to put a comment in your HTML/JSPs and then check that you can
+find that comment in the response sent back from the server for an appropriate request.
+In a real
+application you will also want to check cookie values and check that
+records have been created or updated in your database, etc.
+</p>
+
+<p>
+The classes help you make http requests, but it's up to you to put the code
+in place to implement the checks on what you get back.  Best if you look at the examples.
+</p>
+
+<p>
+Warning: these classes can be thought of as a very simple and very incomplete HTTP client
+implementation.
+If you already have a HTTP client implementation, you may be better off using
+it rather than these classes.  These classes have been built to make testing
+easy rather than built to be a complete HTTP client.
+</p>
+
+
+<h1><a name="faq">FAQ</a></h1>
+
+<ul>
+
+<li> <b>Will this work with ASP? (XSP, CGIs, plain HTML, whatever)</b>
+<br>
+Should do. Try it.
+
+<br><br>
+
+<li> <b>Is this a load/stress testing tool?</b>
+<br>
+Nope.
+
+<br><br>
+
+<li> <b>Is this a GUI tester?</b>
+<br>
+Not really.  You will probably separate application logic from display
+by putting your logic into beans or servlets, and use JSP to render information.
+<br>
+
+However, chances are you may have some logic in a JSP
+or a servlet: examples might be deciding which page to forward to
+based on parameters supplied from the user &#151;  perhaps for user
+registration.  Sure you can test your <code>boolean isValidRegistration()</code> method,
+but you will also want to test that <code>isValidRegistration()</code> is called
+correctly with the right parameters from the HTML form.  This is where
+these classes come in.  They allow you to call the JSP (servlet, whatever) and
+check that you get the right stuff coming back.
+<br>
+You can catch these common problems:
+<ul>
+<li> Someone changes the names of the field on a form;
+<li> someone reworks a form and removes a field;
+<li> you add a required field to a piece of logic and it is missing from the form.
+</ul>
+
+<br><br>
+<li> <b>Isn't this just a HTTP client?</b>
+<br>
+Yes.  A bad, bad, simple, incomplete HTTP client.
+<br>
+If you have a good HTTP client that you know and trust, you're
+probably better off using it.
+<br><br>Please don't try to use these classes in place of a good
+HTTP client: there's a lot that hasn't been implemented and a lot
+of simplifications.  If you really need to test HTTP client/server
+communications, you probably don't want these classes.  If you just
+want a quick way to send requests and make sure what you get back is roughly
+what you expect to get back, these classes may be for you.
+
+</ul>
+
+<h1><a name="examples">Examples</a></h1>
+
+
+
+<ol>
+<li> The <a href="howto.txt">howto.txt</a> file provides a quick introduction to using jsptest.
+<li> <a href="Example1.txt">Example1.java</a> shows the "hello world" case of using the testing classes.
+<li> <a href="JSPTestTest.txt">JSPTestTest.java</a> shows two uses of these classes inside of JUnit.
+</ol>
+
+
+
+
+
+<h1><a name="contact">Feedback</a></h1>
+
+<p>
+You can get the latest version of JSP Test from:
+http://www.dallaway.com/jsptest/
+</p>
+
+
+<h1><a name="list">Mailing list</a></h1>
+
+<p>
+You can subscribe for the low-volume JSPTest announcement list to receive
+updates when new versions of JSPTest become available.  No spam ever.
+<br>
+<form action="http://www.dallaway.com/cgi-bin/jsptestsignup.cgi" method="post">
+Email: <input type="text" size="30" name="email">
+<input type="submit" value="OK">
+</form>
+</p>
+
+<h1><a name="changes">Changes</a></h1>
+
+<p>
+<table cellpadding="4" border="0">
+
+
+<tr >
+	<td valign="top"><p>2002-12-30</p></td>
+	<td valign="top"><p>Switched internal code to use Apache's HTTP Client</p>
+	</td>
+</tr>
+
+<tr >
+	<td valign="top"><p>2002-01-07</p></td>
+	<td valign="top"><p>Added support for POST requests. <br>
+	Added howto.txt documentation on using JPSTest<br>
+	Better support for RFC 2616 (HTTP/1.1), including "100 Continue"</p>
+</td>
+</tr>
+
+
+<tr>
+	<td valign="top"><p>2001-12-03</p></td>
+	<td valign="top"><p>Added SSL (https) support.</p></td>
+</tr>
+
+<tr>
+	<td valign="top"><p>2001-11-16</p></td>
+	<td valign="top"><p>Bug fix.  JSPTest failed to request pages from a URL without an
+            explicit port. Reported by Vinoth Prabakaran.<br>
+			Also upgraded tests to require junit3.7 in preparation for JDK 1.4
+			Ant build tasks upgraded to run with ANT 1.4.</p></td>
+</tr>
+
+<tr>
+	<td valign="top"><p>2000-08-18</p></td>
+	<td valign="top"><p>Added "Host:" header to requests to support HTTP/1.1 virtual hosts.</p></td>
+</tr>
+</p>
+
+
+<p>
+</p>
+<p>
+</p>
+
+
+<!--#include virtual="/footer.html" -->
+</BODY>
+</HTML>

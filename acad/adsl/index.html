@@ -1,0 +1,497 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>RedHat 7.1 USB ADSL set up</TITLE>
+		<META name="keywords" content="adsl, btinternet, usb, speedtouch, redhat, red, hat, 7.1, 2.4.9, bt internet">
+		<META name="description" content="Notes on getting USB ADSL running with RedHat 7.1 and kernel 2.4.9">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../index.html">Writing</a> - ADSL</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+
+<h1>RedHat 7.1 USB ADSL set up</h1>
+
+<p>
+My notes on getting ADSL up and running on RedHat GNU/Linux 7.1 using the Alcatel SpeedTouch USB modem.
+</p>
+
+<p>
+
+</p>
+<table>
+<tr>
+<td valign="top">
+<ul>
+<li> <a href="#bg">Background and reading</a>
+<li> <a href="#kernel">Build a bootable kernel</a>
+<li> <a href="#patch">Patching the kernel</a>
+<li> <a href="#recompile">Configure and recompile the kernel</a>
+<li> <a href="#driver">Installing the driver</a>
+<li> <a href="#mgmt">Installing the Alcatel software</a>
+<li> <a href="#mounting">Mounting</a>
+<li> <a href="#test">Testing</a>
+<li> <a href="#pppd">Installing and configuring pppd</a>
+<li> <a href="#debug">Debugging the pppd setup</a>
+<li> <a href="#nat">Simple firewall and NAT</a>
+<li> <a href="#reconnect">Reconnecting after a line drop</a>
+<li> <a href="#shutdown">Shutting down the server</a>
+</ul>
+</td>
+<td width="50px">&nbsp;</td>
+<td valign="top" align="middle">
+<script type="text/javascript"><!--
+google_ad_client = "pub-7754260355934493";
+google_ad_width = 250;
+google_ad_height = 250;
+google_ad_format = "250x250_as";
+google_ad_channel ="3686166658";
+google_color_border = "CCCCCC";
+google_color_bg = "FFFFFF";
+google_color_link = "000000";
+google_color_url = "666666";
+google_color_text = "333333";
+//--></script>
+<script type="text/javascript"
+  src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</td>
+</tr>
+</table>
+
+<p>Original: September 2001.  This version: $Revision $Date: 2002/01/11 10:40:34 $</p>
+
+<p>
+<b>Changes</b>
+<br />
+2001/11/20:	Added notes on reconnecting after a line drop, how to shutdown a server gracefully, and comment on
+alternative drivers.
+</p>
+
+<hr />
+
+<h2><a name="#bg"></a>Background and reading</h2>
+
+<p>
+The starting point for this project was a P3 500 Intel box running RedHat 7.1 (2.4.2-2 kernel).  I signed up
+for BTInternet's home USB/ADSL solution, and then started tinkering to get the machine running as a
+router, firewall and file server.</p>
+
+<p>These notes are here mostly to remind me of what I have to do the next
+time I need to set up ADSL on a RedHat machine.  They were written after the event, so I can only hope (but not
+promise) to have remembered the order for some of these steps. <b>Disclaimer:</b> you need to know what you're
+doing because just about everything in this document can lead to bust machines, lost or corrupt  data or worse, and
+I have no way of knowing how it will pan out for you... so take care.  I recommend you don't try anything
+in this document.
+</p>
+
+
+
+<p>
+
+These are the steps you need to go through:
+
+<ol>
+
+<li> Read Johan Verrept's <a href="http://linux-usb.sourceforge.net/SpeedTouch/howto.html">SpeedTouch USB Linux Driver HOWTO</a>.  Much of what I say in here will point to this HOWTO.
+
+<li> I found the <a href="http://www.dallaway.com/reading/archive/nag.xml">Linux Network Administrator's Guide</a> helpful.
+
+
+<li> Make sure you can build a kernel.  No point messing with the ADSL stuff until you know you can fiddle with a kernel, recompile it and get it to boot.  For this, you'll need the <a href="http://www.linuxdoc.org/HOWTO/Kernel-HOWTO.html">Kernel HOWTO</a>.
+
+<li> Once you have a working kernel, you patch it and recompile it setting a whole bunch of specific options.
+
+<li> Then you install various drivers and software to make your machine talk to the modem.
+
+<li> Last you setup pppd to connect to your service provider.
+
+</ol>
+
+
+<p>As an alternative, I'm hearing good things about <a href="http://www.smoothwall.org">Smoothwall</a>.  This appears to be a Linux distribution set up just to run as a firewall but with all the right magic patches to run the USB ADSL modem.  I've not personally tried it yet.</p>
+
+
+<p>
+I've also been told that the <a href="http://benoit.papillault.free.fr/speedtouch/user.en.php3">Benoit drivers</a>
+allow you to get ADSL running without having to mess with your kernel.  I've not looked at this yet and
+this document does not relate to the Benoit drivers.
+</p>
+
+
+<p>Thanks to Johan Verrept for answering my dumb questions.</p>
+
+
+<h2><a name="kernel"></a>Build a bootable kernel</h2>
+
+
+<p>
+The objective of this first step is to make sure we can build a clean kernel.  Once we have a working
+kernel we'll go on to patch it for ADSL support.</p>
+
+<p>
+I downloaded the 2.4.9 kernel from <a href="http://kernel.org">kernel.org</a>.  I'd previously tried
+to patch and recompile my RedHat shipped 2.4.2 kernel, and it all went horribly wrong for me due
+to my lack of experience in building kernels.  I ended up reinstalling RedHat.
+</p>
+
+<p>
+I extracted the kernel to my home directory, <code>~/linux-2.4.9/</code>, and ran <code>make menuconfig</code>.</p>
+
+<p>These are the options I selected, but of course they are specific to my hardware.  You almost certainly don't want to copy these.  Rather, figure out what you need and set the kernel options accordingly.</p>
+
+<tt>
+<pre class="example-code">
+Processor: SMP N
+SCSI Y
+scsi generic M
+scsi cdrom M
+ramdisk support Y
+initial ram disk support Y
+Low-level SCSI: aic6xxx M
+Networking: 3Com 3c905 Y
+
+File systems:
+DOS FAT fs support Y
+VFAT fs support Y
+
+Networking options/Network packet Y
+IP Netfilter config:
+  Connection tracking Y
+  FTP support Y
+  IP tables support Y
+  MAC address support Y
+  Netfilter MARK match support M
+  Connection state support Y
+  Multiple port match support Y
+  Packet filtering Y
+  Reject support M
+  Mirror support N
+  TOS match support Y
+  Limit match support M
+  tcpmss match support M
+  Full NAT Y
+  Masquerade Y
+  Redirect M
+  MARK target M
+  TCPMSS target M
+  LOG target M
+  Packet Mangling M
+  TOS target M
+
+PCMCIA N
+PNPBIOS support Y
+
+Power manamgnet support Y
+Advanced power management BIOS support M
+Enable PM at boot Y
+</pre>
+</tt>
+
+<p>
+With those options set and saved, the kernel was built using:
+<pre class="example-code">
+make dep
+make bzImage
+make modules
+
+as root:
+make install
+make modules_install
+cd /boot
+mkinitrd initrd-2.4.9.img 2.4.9
+</pre>
+</p>
+
+<p>I then set up Lilo to boot into the new kernel by editing <code>/etc/lilo.conf</code> and adding the following lines:</p>
+
+<pre class="example-code">
+image=/boot/vmlinuz-2.4.9
+        label=linux-2.4.9
+        initrd=/boot/initrd-2.4.9.img
+        read-only
+        root=/dev/sdb1
+</pre>
+
+
+<p>If you're feeling brave, you can make the 2.4.9 kernel the default by setting <code>default=linux-2.4.9</code>.  I ran <code>lilo -v</code> then rebooted. </p>
+
+
+
+<h2><a name="patch"></a>Patching the kernel</h2>
+
+<p>The objective here is to apply a patch to add in support for ADSL.  This is well documented in the SpeedTouch HOWTO. So, all I'll add here is that the patch command I had to run was slightly different: <code>patch -p1 -E --fuzz=3 < pppoatm-1</code>.
+
+
+</p>
+<h2><a name="recompile"></a>Recompile the kernel</h2>
+
+<p>The aim of this step is to rebuild the kernel with the new patch, and switch on some options
+to enable ADSL</p>
+
+<p>Again, this is well documented in the SpeedTouch HOWTO.  I made some changes:</p>
+
+<ul>
+<li> I said "no" to hotpluggable device support.  This was confusing me in my early attempts, and I decided to remove this option to simplify my debugging.  As I understand it, the hot pluggable option means that Linux knows what needs to be run when you plug or unplug a device.  This isn't too important to me because I leave the ADSL connection plugged in all the time, so I can have the right scripts run when the machine boots.
+
+<li> In the section on "USB Support" I said "no" to both OHCI (Compaq, iMacs, OPTi, SiS, ALi, ...) support  and UHCI Alternate Driver, but M to UHCI (Intel PIIX4, VIA,...) Support.  This is probably a choice that's specific to the hardware I have.
+
+</ul>
+
+<p>I then recompiled the kernel and rebooted (that's the last reboot, BTW).</p>
+
+
+<h2><a name="driver"></a>Installing the driver</h2>
+
+
+<p>Again, this part is well documented in the SpeedTouch HOWTO.  I seem to remember the exact command sequence was a bit fiddly, so I'll document my command sequence:</p>
+
+<pre class="example-code">
+# Download  sarlib-0.2.4.tar.gz
+tar zxf sarlib-0.2.4.tar.gz
+# Rename folder to name expected by speedtouch
+mv sarlib-0.2.4 sarlib
+cd sarlib
+make
+
+
+cd ..
+# download speedtouch-1.5.tar.gz
+tar zxf speedtouch-1.5.tar.gz
+cd SpeedTouch
+make
+
+as root:
+make install
+</pre>
+
+<p>If you're trying out various kernel recompiles, each time you run <code>make modules_install</code> the <code>speedtch</code> driver is removed from <code>/lib/modules/2.4.9/kernel/drivers/usb</code>.  The fix for this is to simply go back to the SpeedTouch folder and run that final <code>make install</code>.</p>
+
+
+
+
+<h2><a name="mgmt"></a>Installing the Alcatel software</h2>
+
+<p>This part is fully described in the SpeedTouch HOWTO.  When I ran the <code>make</code> on this
+part, I was told "Warning: Object was compiled with libc-2.1.92, you APPEAR to be using libc-2.2.2".  I ignored this.</p>
+
+<p>Clue:  The HOWTO talks about the <code>mgmt</code> command. This now seems to be <code>speedmgmt</code>.</p>
+
+<h2><a name="mount"></a>Mounting</h2>
+
+<p>I edited <code>/etc/fstab</code> and added the following line:</p>
+
+<code>none /proc/bus/usb/ usbdevfs defaults 0 0</code>
+
+<p>Then, as root, ran: <code>mount -a</code>.</p>
+
+</p>
+
+
+<h2><a name="test"></a>Testing</h2>
+
+<p>There's more to do yet, but I found it useful to pause at this point to see how much was working.</p>
+
+<p>So, I ran the following two commands as root...</p>
+
+<pre class="code-example">
+modprobe speedtch
+modprobe usb-uhci
+</pre>
+
+<p>...and then put those two lines in <code>/etc/rc.d/rc.local</code> so they happen each time my machine boots.</p>
+
+<p><code>/var/log/messages</code> showed the following messages, which all looked pretty reasonable:</p>
+
+<pre class="code-examples">
+kernel: usb-uhci.c: $Revision: 1.1.1.1 $ time 09:05:09 Sep  7 2001
+kernel: usb-uhci.c: High bandwidth mode enabled
+kernel: usb-uhci.c: USB UHCI at I/O 0xef80, IRQ 10
+kernel: usb-uhci.c: Detected 2 ports
+kernel: usb.c: new USB bus registered, assigned bus number 1
+kernel: hub.c: USB hub found
+kernel: hub.c: 2 ports detected
+kernel: usb-uhci.c: v1.251:USB Universal Host Controller Interface driver
+/etc/hotplug/usb.agent: ... no drivers for USB product 0/0/0
+kernel: usb.c: registered new driver Alcatel SpeedTouch USB
+</pre>
+
+
+<p>I plugged in the USB modem and ran the <code>speedmgmt</code> command, and the log said:</p>
+
+<pre class="code-examples">
+kernel: hub.c: USB new device connect on bus1/2, assigned device number 2
+Speedmgmt[1160]: Alcatel SpeedTouch USB Management daemon started.
+Speedmgmt[1160]: (C) Alcatel 2001, Version 1.3.4
+kernel: usb_control/bulk_msg: timeout
+kernel: usbdevfs: USBDEVFS_BULK failed dev 2 ep 0x85 len 512 ret -110
+Speedmgmt[1160]: Preceding (timeout) error messages are normal.
+kernel: usb_control/bulk_msg: timeout
+Speedmgmt[1160]: Modem initialised at 576 kbit/s downstream and 288 kbit/s upstream
+</pre>
+
+<p>This all looks good.  Note that the timeout and USBDEVFS_BULK messages are normal.</p>
+
+
+
+<h2><a name="pppd"></a>Installing and configuring pppd</h2>
+
+<p>The final step is to install and configure a PPPoA-aware pppd to connect to BTInternet.  The steps in the HOWTO explain this.</p>
+
+<p>As root I installed the software with: <code>rpm -i --force ppp-2.4.0b2-2.i386.rpm</code>.  When I tried the command without <code>--force</code> rpm complained about various pppd files being used by
+some other install.  I guess I should have tracked that down, but I didn't.</p>
+
+<p>The configuration of pppd is as given in the HOWTO.  In <code>/etc/ppp/options</code> I added the <code>usepeerdns</code> option.</p>
+
+<p>Running <code>pppd</code> started the PPP connection to BTInternet and my ADSL line was working.  I think I may have copied the contents of <code>/etc/ppp/resolve.conf</code> into <code>etc/resolve.conf</code> to get name resolution working.</p>
+
+<p>Two warnings I did see was: "modprobe: Can't locate module net-pf-4" and "modprobe: Can't locate module net-pf-5".  To get rid of these warnings I edited <code>/etc/modules.conf</code> and added the following lines:
+<pre class="code-examples">
+alias net-pf-4 off
+alias net-pf-5 off
+</pre>
+
+<p>These modules seem to have something to do with Appletalk and IPX, neither of which I used.  I also had to run <code>depmod -A</code> after changing <code>modules.conf</code>.</p>
+
+
+
+
+<h2><a name="debug">Debugging pppd</a></h2>
+
+
+<p>
+I had a few problems getting pppd running, which turned out to be typos
+I had in the chap-secrets file.  One thing that helped me track down
+what was going on was to stop pppd and run it in a debug mode:</p>
+
+<pre class="example-code">
+killall pppd
+pppd nodetach debug
+</pre>
+
+<p>
+To see the debug messages you'll have to turn on logging by editing <code>/etc/syslog.conf</code> to add the following lines:</p>
+
+
+<pre class="example-code">
+# Debugging, added for getting ADSL running:
+daemon.debug               /var/log/messages
+</pre>
+
+<p>Then restart the logger: <code>killall -HUP syslogd</code></p>
+
+
+
+<h2><a name="nat">Simple firewall and masquerading (NAT)</a></h2>
+
+<p>I wanted to stop anyone coming in through the ADSL line, but allow my Linux machine to handle internet traffic for my laptop.  This section documents the simple firwewalling and NAT set up I started out with, just to get me going.</p>
+<p>The first step was to edit <code>/etc/sysconfig/network</code> and change FORWARD_IPV4 to the value "yes".</p>
+
+<p>Next up I created <code>/etc/rc.d/rc.firewall</code> to hold my firewall configuration:</p>
+
+<pre class="code-examples">
+echo "1" > /proc/sys/net/ipv4/ip_forward
+echo "1" > /proc/sys/net/ipv4/ip_dynaddr
+
+iptables -F FORWARD
+iptables -F INPUT
+iptables -P FORWARD ACCEPT
+# not sure if next two are needed or not
+iptables -A INPUT -i eth0 -j ACCEPT
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -i ppp0 -p tcp --syn -j DROP
+
+iptables -t nat -F POSTROUTING
+# next rule is wrong, but DHCP fails if ACCEPT is DROP
+iptables -t nat -P POSTROUTING ACCEPT
+iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+</pre>
+
+
+<p>I edited <code>/etc/rc.d/rc.local</code> to run the rules at boot time by adding the following line to the end of the file: <code>/etc/rc.d/rc.firewall</code>.  I then made the rules executable and ran them:
+
+<pre class="code-examples">
+chmod +x /etc/rc.d/rc.firewall
+/etc/rc.d/rc.firewall
+</pre>
+
+
+<p>I configured DHCP so my laptop could get an IP address and know where to go for anything internet related. In my network I decided that the server would be 192.168.0.10 and the laptop would be somewhere between 192.168.0.20 and .40. To get this running I created <code>/etc/dhcpd.conf</code>:</p>
+
+<pre class="code-examples">
+subnet 192.168.0.0 netmask 255.255.255.0 {
+        range 192.168.0.20 192.168.0.40;
+        default-lease-time 2592000;
+        option domain-name-servers 192.168.0.10;
+        option routers 192.168.0.10;
+}
+</pre>
+
+<p>I then enabled dhcpd to start at boot time, and started it manually for now:</p>
+
+<pre class="code-examples">
+chkconfig dhcpd on
+/etc/rc.d/init.d/dhcpd start
+</pre>
+
+
+<p>The default RedHat install seems to be configured to run a caching name server.  So I started it:</p>
+
+<pre class="code-examples">
+chkconfig named on
+/etc/rc.d/init.d/named start
+</pre>
+
+<p>
+For reasons I don't yet understand, connecting to the server for the first time takes a long time (I'm thinking named issues with reverse DNS lookups of some kind) and (b) if I want to telnet or ftp to the server I have to chkconfig ftp off and then chkconfig ftp on.  Not sure why that happens at all.</p>
+
+<p>With that little lot in place, the laptop can see the server and also straight out onto the internet for web and email and any other services.</p>
+
+
+<h2><a name="reconnect">Reconnecting after a line drop</a></h2>
+
+<p>Sometimes the ADSL line will drop.  This always seems to be when my service provider (BT) are
+having "difficulties".  A typical message in <code>/var/log/messages</code> will be something like this:</p>
+
+<pre class="code-examples">
+pppd[1535]: No response to 7 echo-requests
+pppd[1535]: Serial link appears to be disconnected.
+pppd[1535]: Connection terminated.
+pppd[1535]: Connect time 6.6 minutes.
+pppd[1535]: Sent 39783 bytes, received 243494 bytes.
+pppd[1535]: Exit.
+</pre>
+
+<p>To reconnect I run this command: <code>killall pppd; sleep 1; pppd</code> as root.  This kills off the PPP daemon and then restarts it.  If BT are having problems, you may have to do this a number of times until it reconnects.  I find it worth trying a few times, then leaving it for 15 mins or so before trying again.  Sometime's it's good to call the BT Broadband service information line (0800 169 0199) so you can be told that, yes, there is a problem and BT are looking into it.</p>
+
+
+<h2><a name="shutdown">Shutting down the server</a></h2>
+
+<p>A known issue with these ADSL drivers is that your machine will panic and crash during a <code>shutdown</code>.  My solution is to run the following as root to shutdown my machine:</p>
+
+<pre class="code-examples">
+killall pppd
+killall speedmgmt
+/sbin/rmmod usb-uhci
+/sbin/rmmod speedtch
+poweroff
+</pre>
+
+
+<!--#include virtual="/footer.html" -->
+
+
+
+</BODY>
+</HTML>

@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+	<HEAD>
+		<TITLE>MacOS switching</TITLE>
+		<META name="keywords" content="switching, linux, mac, macos, macos x, sony, apple">
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+		<META name="description" content="I've switched from Linux to MacOs X">
+		<LINK TITLE="House Style" REL=STYLESHEET HREF="../../layout.css" TYPE="text/css">
+
+	</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" onLoad="if (document.searchForm.query) document.searchForm.query.focus()">
+
+
+
+	<TABLE WIDTH="100%"  cellspacing="0" cellpadding="0">
+
+	<TR><!-- TOP BAR WITH SEARCH -->
+		<TD CLASS="navbar"><a href="/index.html">dallaway.com</a> - <a href="../index.html">Writing</a> - Switched</TD><TD class="navbar" VALIGN="middle" ALIGN="right"><!--#include virtual="/findbar.html" --></TD>
+	</TR>
+	</TABLE>
+
+
+
+<h1>Switching to MacOS X</h1>
+
+
+
+<p>
+I made the switch from a Sony laptop running Linux to a 17" Apple Power Book around two months ago.  Here's a list of some of thing things that I had to learn.
+</p>  
+
+<p>
+Before making a purchase I had two worries: one was over a specific piece of software I had to use and the second was how fast the machine would be.  I decided to rent an iBook for a week.  This demonstrated that the software I had a concern over would indeed work, but it also taught me that iBooks are fine machine.  Now that I've finally made the Power Book purchase I'm happy with the performance. I had been using a Pentium III 800Mhz laptop with 256M of memory: the 1GHz Power Book with 1G of memory is a huge improvement... but that could mostly be the memory for all I know.  
+</p>
+
+<p>
+Now here's that list...
+</p>
+
+<ul>
+
+<li> 
+Connecting to a windows share.  I run Samba on a home server, and it took me a while to figure this out.  To connect, I selected the Finder and then did Apple-K (or Go/Connect to Server in the menus).  It works.  The network share appears on the desktop.
+</li>
+
+<li> 
+Customizing dock, background, screen saver, auto software updates etc.  Under the Apple menu, select System Preference... it's all in there.
+</li>
+
+<li> 
+How to get Eclipse into the dock?  I use the <a href="http://www.eclipse.org/">Eclipse</a> IDE.  You download this, install it, it works.  But I couldn't figure out how to get it into the Dock so I could easily launch it.  The answer is: launch the application, so it appears in the doc, then CTRL-Click on it and select "Keep in dock". Or, right-click if you've installed a two butto mouse, which I have.
+</li>
+
+<li>
+About the Dock: it's a list of applications, with arrows underneath the apps that are running.  To the right there are a list of windows which have been minimized.
+</li>
+
+<li>  
+How to grab additional packages like wget, gcc or cvs.  First, download and install the developer kit from <a href="http://developer.apple.com/index.html">Apple Developer Connection (ADC)</a>.  It's a big CD worth of stuff.  Also download and install the Apple X11 implementation (this is now on the OS install CD).  If you need more stuff, you can use <a href="http://fink.sourceforge.net/index.php">Fink</a>, but I've now switched to using <a href="http://www.opendarwin.org/projects/darwinports/">Darwin Ports</a>.  This may seem more complicated, but oddly I find it easier to use: you check-out darwin ports from CVS and build it.  From what I can make out, the CVS repository contains ports of applications, so you can just build them.  It downloads any extra pieces it needs.  The only thing I had to do after make-ing the application was to edit <code>/etc/ports/sources.conf</code> to add the line <code>file:///usr/local/src/darwinports/dports</code> - <code>/usr/local/src</code> being the place I put Darwin ports when I checked it out of CVS.  From there it's all plain sailing using the <code>port</code> command from the shell (e.g., <code>port list | more</code>).  [Update: I've found I've not been using Fink or Darwin Ports much... seems I have much of what I need installed already]
+</li>
+
+
+<li>
+By default the shell is tcsh.  To change it use:
+<code>sudo niutil -createprop / /users/richard shell /bin/bash</code>.
+Note that it's /users not /Users, that's because
+it has something to do with /Applications/Utilities/NetInfo Manager
+not the filesystem.
+</li>
+
+<li>
+The root account is disabled, but you have sudo so that's fine. If you want to
+enable the root account, take a look at the excellent <a href="http://www.macosxhints.com">macosxhints.com</a>.
+</li>
+
+
+<li>
+For products like Tomcat it's good to set <code>$JAVA_HOME</code>, and the right value for this is <code>/System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Home</code>.
+Also, it's a good idea to set this in your own <code>~/.profile</code> because <code>/etc/profile</code> seems to get
+overwritten during some OS X updates.
+</li>
+
+<li>
+Safari's 60 second timeout too short.
+Install <a href="http://www.unsanity.org/archives/000164.php">SafariNoTimeout</a> and change the settings with 
+<code>defaults write com.unsanity.snt Timeout 300</code> (300 = 300 seconds).
+</li>
+
+
+<li>
+TextEdit supports utf-8 (and many other encodings).  The Preferences window allows you to set default the character encoding used for reading and writing.  
+</li>
+
+
+
+<li>
+From the shell, the <code>open</code> command is handy for opening something using whatever MacOs X wants to use.  E.g., <code>open .</code> opens the current directory in the Finder.  <code>open foo.log</code> opens foo.log in the log viewer thingy.  Or you can do something like <code>open -a TextEdit foo.log</code> which will open foo.log in the TextEdit application.
+</li>
+
+<li>
+I didn't like it at first, but <a href="http://iterm.sourceforge.net/">iTerm</a> is a good substitute for the default Terminal program.  The thing
+that's swung it for me is the drop-down list of connections that
+let you set up quick access to machines (ssh, telnet etc).
+</li>
+
+<li>
+Learn the <a href="http://docs.info.apple.com/article.html?artnum=75459">Apple key shortcuts</a> for all sorts of things from quiting apps to taking screen shots.  Apple-Q = quit, Apple-W-=close window, Apple-S is save and in Finder Apple-F is find and Apple-A takes you to your applications.  Apple-c and Apple-v are not the same as Apple-C and Apple-V so watch out for the caps lock being on.  On the subject of keyboard differences you'll note that certain keyboard locations have been moved: ", @, |, \, ~, # (Alt-3) ... at least from the point of view of someone familiar to British PC keyboard layout.</li>
+
+<li>
+Typing accents:
+Alt+n to add a ~, e.g., Alt+n n = ñ;
+Alt+` for grave (à);
+Alt+e for accute (é);
+Alt+u for things like ä, ë;
+Alt+i for circumflex (î); and
+Alt+c for ç
+</li>
+
+<li>Installing software seems to be done in one of two ways.  Either an application has an installer, or when you unpack an application it tells you to drag the applications icon to wherever you want it (/Applications probably).  Uninstalling an  applications is a case of quitting the application, then dragging its icon to the trash.
+</li>
+
+<li>You can get Windows Media Player and RealPlayer for MacOS X</li>
+
+<li>
+FTP is odd.  When you connect to an FTP site in Safari, the FTP site is mounted on the desktop.  Ok... but it always seems to be read-only, even if I specify a username/password in the URL.  You still have the command-line FTP command, and scp, but I've also start to use <a href="http://rsug.itd.umich.edu/software/fugu/">Fugu</a> and a very pretty <a href="http://cyberduck.ch">Cyberduck</a>.
+</li>
+
+
+<li>
+<a href="http://ranchero.com/netnewswire/">NetNewsWire</a> is good for RSS feeds.  Apple are planning to include RSS support in Safari, so you may not need NetNewsWire.
+</li>
+
+
+<li>
+Right now the OpenOffice release I'm using runs fine under X11, but it doesn't look great.  The OpenOffice folk are working on a native Mac version, I believe.
+</li>
+
+<li>
+For instant messaging I'm using the duck-obsessed <a href="http://www.adiumx.com/">AdiumX</a>.  I use it for Yahoo!, MSN, Jabber and AIM.  See their FAQ entry
+on "What's with the ducks?"
+</li>
+
+<li>Nice touch:  when you have a document open, the top of the window has an icon of the document.  Turns out you can click and drag on that places: e.g., to drag the document into an email.</li>
+
+<li>Another nice touch: if you do a File/Open on something, you can drag a file or folder from Finder into the dialog box and it sorts itself out as you'd want it to.
+</li>
+
+<li>
+Everything else... just works... and I'm not going to go on and on about all the nice little touches.  Except for :-) the fact that when you close the lid of the Power Book it hibernates so very quickly.  When you open the lid, the desktop is just there.  The way it's supposed to be.  
+</li>
+
+
+</ul>
+
+
+<!--#include virtual="/footer.html" -->
+
+</BODY>
+</HTML>
+
