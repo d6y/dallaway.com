@@ -1,1 +1,1 @@
-This site is for dallaway.com as well as www.dallaway.com
+This site is for https://www.dallaway.com
